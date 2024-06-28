@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP INA819IDR
+D 35-uV Offset, 8-nV/Hz noise, low-power, precision instrumentation amplifier
+K
+F http://www.ti.com/lit/gpn/INA819
+$ENDCMP
+#
+#End Doc Library

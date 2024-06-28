@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP SN65HVD1176DR
+D PROFIBUS RS-485 Transceiver
+K
+F http://www.ti.com/lit/gpn/sn65hvd1176
+$ENDCMP
+#
+#End Doc Library

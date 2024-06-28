@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP JW2SN-DC5V
+D Panasonic PCB Mount Power Relay, 5V dc Coil, DPDT
+K
+F https://www3.panasonic.biz/ac/e_download/control/relay/power/catalog/mech_eng_jw.pdf?f_cd=300212
+$ENDCMP
+#
+#End Doc Library

@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP EEE-HAV100WAR
+D Cap Aluminum Lytic 10uF 35V 20% (4 X 5.4mm) SMD 22mA 1000h 105C Automotive T/R
+K
+F http://industrial.panasonic.com/cdbs/www-data/pdf/RDE0000/ABA0000C1148.pdf
+$ENDCMP
+#
+#End Doc Library

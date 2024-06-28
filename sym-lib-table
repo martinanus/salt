@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name "salt")(type "KiCad")(uri "${KIPRJMOD}/salt.kicad_sym")(options "")(descr ""))
+)

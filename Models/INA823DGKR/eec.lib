@@ -1,0 +1,63 @@
+EESchema-LIBRARY Version 2.4
+#encoding utf-8
+#
+# Texas Instruments INA823DGKR
+#
+DEF INA823DGKR U 0 40 Y Y 2 L N
+F0 "U" 0 200 50 H V L CNN 
+F1 "INA823DGKR" 0 300 50 H V L CNN 
+F2 "Texas_Instruments-DGK0008A-0-0-*" 0 400 50 H I L CNN 
+F3 "https://www.ti.com/lit/ds/symlink/ina823.pdf" 0 500 50 H I L CNN 
+F4 "+125°C" 0 600 50 H I L CNN "ambient temperature range high"
+F5 "-40°C" 0 700 50 H I L CNN "ambient temperature range low"
+F6 "No" 0 800 50 H I L CNN "automotive"
+F7 "1.9MHz" 0 900 50 H I L CNN "bandwidth"
+F8 "IC" 0 1000 50 H I L CNN "category"
+F9 "Integrated Circuits (ICs)" 0 1100 50 H I L CNN "device class L1"
+F10 "Linear ICs" 0 1200 50 H I L CNN "device class L2"
+F11 "Instrumentation" 0 1300 50 H I L CNN "device class L3"
+F12 "PRECISION (100 UV), LOW-POWER (2" 0 1400 50 H I L CNN "digikey description"
+F13 "296-INA823DGKRCT-ND" 0 1500 50 H I L CNN "digikey part number"
+F14 "1.1mm" 0 1600 50 H I L CNN "height"
+F15 "0.0012uA" 0 1700 50 H I L CNN "input bias current"
+F16 "0.02mV" 0 1800 50 H I L CNN "input offset voltage"
+F17 "Yes" 0 1900 50 H I L CNN "lead free"
+F18 "5692ff462c623e81" 0 2000 50 H I L CNN "library id"
+F19 "Texas Instruments" 0 2100 50 H I L CNN "manufacturer"
+F20 "18V" 0 2200 50 H I L CNN "max dual supply voltage"
+F21 "+175°C" 0 2300 50 H I L CNN "max junction temp"
+F22 "36V" 0 2400 50 H I L CNN "max supply voltage"
+F23 "1.35V" 0 2500 50 H I L CNN "min dual supply voltage"
+F24 "2.7V" 0 2600 50 H I L CNN "min supply voltage"
+F25 "595-INA823DGKR" 0 2700 50 H I L CNN "mouser part number"
+F26 "180uA" 0 2800 50 H I L CNN "nominal supply current"
+F27 "1" 0 2900 50 H I L CNN "number of channels"
+F28 "20mA" 0 3000 50 H I L CNN "output current per channel"
+F29 "VSSOP8" 0 3100 50 H I L CNN "package"
+F30 "290us" 0 3200 50 H I L CNN "response time"
+F31 "Yes" 0 3300 50 H I L CNN "rohs"
+F32 "0.05mm" 0 3400 50 H I L CNN "standoff height"
+F33 "+125°C" 0 3500 50 H I L CNN "temperature range high"
+F34 "-40°C" 0 3600 50 H I L CNN "temperature range low"
+F35 "0.001-10V/mV" 0 3700 50 H I L CNN "voltage gain"
+DRAW
+X +IN 3 100 0 100 R 40 0 1 1 U 
+X -IN 2 100 -200 100 R 40 0 1 1 U 
+X OUT 6 700 -100 100 L 40 0 1 1 P 
+X +VS 7 400 100 100 D 40 0 1 1 W 
+X -VS 4 400 -300 100 U 40 0 1 1 W 
+P 2 1 1 0 200 100 600 -100 N
+P 2 1 1 0 200 -300 600 -100 N
+P 2 1 1 0 200 -300 200 100 N
+T 0 220 30 60 1 1 _
+P 2 1 1 0 230 0 270 0 N
+P 2 1 1 0 250 20 250 -20 N
+P 2 1 1 0 230 -200 270 -200 N
+X 1_RG 1 100 0 100 R 40 40 2 1 P 
+X 2_RG 8 100 -200 100 R 40 40 2 1 P 
+X REF 5 1600 0 100 L 40 40 2 1 P 
+S 200 100 1500 -500 2 1 0 f
+ENDDRAW
+ENDDEF
+#
+# End Library

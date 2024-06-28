@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP NVTR0202PLT1G
+D ONSEMI - NVTR0202PLT1G - Power MOSFET, P Channel, 20 V, 400 mA, 0.55 ohm, SOT-23, Surface Mount
+K
+F https://componentsearchengine.com/Datasheets/2/NVTR0202PLT1G.pdf
+$ENDCMP
+#
+#End Doc Library

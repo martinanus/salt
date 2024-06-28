@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP ICL7660AIBAZA
+D The ICL7660S and ICL7660A Super Voltage Converters are monolithic CMOS voltage conversion ICs that guarantee significant performance advantages over other similar devices. They are direct replacements for the industry standard ICL7660 offering an extended operating supply voltage range up to 12V, with lower supply current. A Frequency Boost pin has been incorporated to enable the user to achieve lower output impedance despite using smaller capacitors. All improvements are highlighted in the Electrical Spec
+K
+F https://www.renesas.com/en-us/www/doc/datasheet/icl7660s-a.pdf
+$ENDCMP
+#
+#End Doc Library
