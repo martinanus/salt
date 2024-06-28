@@ -1,0 +1,3 @@
+../Core/Src/sd.c:11:6:mount_filesystem	16	static
+../Core/Src/sd.c:16:6:list_root_files	344	static
+../Core/Src/sd.c:49:6:log_event	728	static

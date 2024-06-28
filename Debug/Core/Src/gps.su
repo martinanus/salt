@@ -1,0 +1,2 @@
+../Core/Src/gps.c:14:1:parse_GPRMC	80	static
+../Core/Src/gps.c:147:1:print_GPRMC	16	static
