@@ -31,7 +31,6 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#define UART_HANDLE huart3
 
 /* USER CODE END Includes */
 
@@ -110,6 +109,8 @@ void Error_Handler(void);
 #define LD2_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+#define DEBUG_UART_HANDLE huart3
+#define WIFI_UART_HANDLE huart4
 
 /* USER CODE END Private defines */
 

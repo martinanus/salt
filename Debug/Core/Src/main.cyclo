@@ -1,0 +1,10 @@
+../Core/Src/main.c:80:5:_write	1
+../Core/Src/main.c:85:6:myUARTCallback	4
+../Core/Src/main.c:104:6:debugCallback	4
+../Core/Src/main.c:129:5:main	1
+../Core/Src/main.c:199:6:SystemClock_Config	3
+../Core/Src/main.c:245:13:MX_UART4_Init	2
+../Core/Src/main.c:278:13:MX_USART3_UART_Init	2
+../Core/Src/main.c:311:13:MX_USB_OTG_FS_PCD_Init	2
+../Core/Src/main.c:346:13:MX_GPIO_Init	1
+../Core/Src/main.c:460:6:Error_Handler	1

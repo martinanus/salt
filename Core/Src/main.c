@@ -42,17 +42,23 @@ void myUARTCallback(UART_HandleTypeDef *huart);
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-UART_HandleTypeDef huart5;
+UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart3;
 
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* USER CODE BEGIN PV */
-uint8_t rxBuff[100];
-uint8_t line[100];
+char rxBuff[100];
+char line[100];
 uint8_t charRead;
 uint8_t idx;
 uint8_t new_line;
+
+char wifi_rxBuff[100];
+char wifi_line[100];
+uint8_t wifi_charRead;
+uint8_t wifi_idx;
+uint8_t wifi_new_line;
 
 
 
@@ -63,7 +69,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
-static void MX_UART5_Init(void);
+static void MX_UART4_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -72,11 +78,30 @@ static void MX_UART5_Init(void);
 /* USER CODE BEGIN 0 */
 // Redirect printf to uart debug
 int _write(int file, char *ptr, int len) {
-    HAL_UART_Transmit(&UART_HANDLE, (uint8_t*)ptr, len, HAL_MAX_DELAY);
+    HAL_UART_Transmit(&DEBUG_UART_HANDLE, (uint8_t*)ptr, len, HAL_MAX_DELAY);
     return len;
 }
 
 void myUARTCallback(UART_HandleTypeDef *huart)
+{
+	  if (wifi_charRead == '\r' || wifi_charRead == '\n'){
+		  if (wifi_idx > 0){
+			  memcpy(wifi_line, wifi_rxBuff, wifi_idx);
+			  wifi_line[wifi_idx++] = '\r';
+			  wifi_line[wifi_idx++] = '\n';
+			  wifi_line[wifi_idx] = '\0';
+			  wifi_new_line = 1;
+			  wifi_rxBuff[0] = '\0';
+			  wifi_idx = 0;
+		  }
+	  } else {
+		  wifi_rxBuff[wifi_idx++] = wifi_charRead;
+	  }
+
+	HAL_UART_Receive_IT(&WIFI_UART_HANDLE , &charRead, 1);
+}
+
+void debugCallback(UART_HandleTypeDef *huart)
 {
 	  if (charRead == '\r' || charRead == '\n'){
 		  if (idx > 0){
@@ -92,7 +117,7 @@ void myUARTCallback(UART_HandleTypeDef *huart)
 		  rxBuff[idx++] = charRead;
 	  }
 
-	HAL_UART_Receive_IT(&huart5, &charRead, 1);
+	HAL_UART_Receive_IT(&DEBUG_UART_HANDLE , &charRead, 1);
 }
 
 /* USER CODE END 0 */
@@ -127,14 +152,14 @@ int main(void)
   MX_GPIO_Init();
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
-  MX_UART5_Init();
+  MX_UART4_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UART_RegisterCallback(&huart5, HAL_UART_RX_COMPLETE_CB_ID, myUARTCallback);
-  HAL_UART_Receive_IT(&huart5, &charRead, 1);
+  //HAL_UART_RegisterCallback(&WIFI_UART_HANDLE , HAL_UART_RX_COMPLETE_CB_ID, myUARTCallback);
+  //HAL_UART_Receive_IT(&WIFI_UART_HANDLE , &wifi_charRead, 1);
 
+  //HAL_UART_RegisterCallback(&DEBUG_UART_HANDLE , HAL_UART_RX_COMPLETE_CB_ID, debugCallback);
+  //	HAL_UART_Receive_IT(&DEBUG_UART_HANDLE , &charRead, 1);
 
-  idx = 0;
-  new_line = 0;
 
   /* USER CODE END 2 */
 
@@ -142,11 +167,23 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if (new_line){
-		  // Print the file or directory name
-		  HAL_UART_Transmit(&huart3, line, strlen((char*) line), 1000);
+
+	  /*
+	   if (new_line){
+		  HAL_UART_Transmit(&WIFI_UART_HANDLE, (uint8_t*)line, strlen(wifi_line), 1000);
 		  new_line = 0;
 	  }
+	   if (wifi_new_line){
+		   HAL_UART_Transmit(&DEBUG_UART_HANDLE, (uint8_t*)wifi_line, strlen(line), 1000);
+		  wifi_new_line = 0;
+	  }
+	   */
+	  // UART TX ONLY WORKS WHEN USB / DEBUG DISCONNECTED
+	  // WITH DEBUGGER, CAN TEST RX
+	  // OR - IT SEEMS THAT CONNECTING GND IS ENOUGH
+	   HAL_UART_Transmit(&WIFI_UART_HANDLE, (uint8_t*)"CHAU\n", 5, 1000);
+	   HAL_Delay(1000);
+
 
     /* USER CODE END WHILE */
 
@@ -201,35 +238,35 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief UART5 Initialization Function
+  * @brief UART4 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_UART5_Init(void)
+static void MX_UART4_Init(void)
 {
 
-  /* USER CODE BEGIN UART5_Init 0 */
+  /* USER CODE BEGIN UART4_Init 0 */
 
-  /* USER CODE END UART5_Init 0 */
+  /* USER CODE END UART4_Init 0 */
 
-  /* USER CODE BEGIN UART5_Init 1 */
+  /* USER CODE BEGIN UART4_Init 1 */
 
-  /* USER CODE END UART5_Init 1 */
-  huart5.Instance = UART5;
-  huart5.Init.BaudRate = 115200;
-  huart5.Init.WordLength = UART_WORDLENGTH_8B;
-  huart5.Init.StopBits = UART_STOPBITS_1;
-  huart5.Init.Parity = UART_PARITY_NONE;
-  huart5.Init.Mode = UART_MODE_TX_RX;
-  huart5.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart5.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart5) != HAL_OK)
+  /* USER CODE END UART4_Init 1 */
+  huart4.Instance = UART4;
+  huart4.Init.BaudRate = 115200;
+  huart4.Init.WordLength = UART_WORDLENGTH_8B;
+  huart4.Init.StopBits = UART_STOPBITS_1;
+  huart4.Init.Parity = UART_PARITY_NONE;
+  huart4.Init.Mode = UART_MODE_TX_RX;
+  huart4.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart4.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart4) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN UART5_Init 2 */
+  /* USER CODE BEGIN UART4_Init 2 */
 
-  /* USER CODE END UART5_Init 2 */
+  /* USER CODE END UART4_Init 2 */
 
 }
 
@@ -314,15 +351,11 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOG_CLK_ENABLE();
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_3, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LD1_Pin|LD3_Pin|LD2_Pin, GPIO_PIN_RESET);
@@ -335,13 +368,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(USER_Btn_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PF3 */
-  GPIO_InitStruct.Pin = GPIO_PIN_3;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
   /*Configure GPIO pins : RMII_MDC_Pin RMII_RXD0_Pin RMII_RXD1_Pin */
   GPIO_InitStruct.Pin = RMII_MDC_Pin|RMII_RXD0_Pin|RMII_RXD1_Pin;
@@ -386,6 +412,22 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(USB_OverCurrent_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PC12 */
+  GPIO_InitStruct.Pin = GPIO_PIN_12;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF8_UART5;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PD2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF8_UART5;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PD6 */
   GPIO_InitStruct.Pin = GPIO_PIN_6;
