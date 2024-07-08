@@ -1,3 +1,0 @@
-../Core/Src/sd.c:11:6:mount_filesystem	2
-../Core/Src/sd.c:16:6:list_root_files	6
-../Core/Src/sd.c:49:6:log_event	4
