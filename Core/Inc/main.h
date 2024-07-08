@@ -36,7 +36,120 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
+typedef enum
+{
+  MODO_NORMAL 	= 0,
+  MODO_LIMITADO = 1,
+  MODO_TOTAL   	= 2
+} salt_mode_t;
 
+typedef enum
+{
+  SPEED_NONE        = 0,      
+  HASLER            = 1,      
+  PULSE_GENERATOR   = 2,      
+  GPS               = 3      
+} speed_source_t;
+
+
+typedef enum
+{
+    NO_ZONE     = 0,      
+    ZONE_1      = 1,      
+    ZONE_2      = 2,      
+    ZONE_3      = 3   
+} zones_t;
+
+
+typedef enum
+{
+	STATUS_OK     = 0,
+	STATUS_ERROR  = 1
+} status_t;
+
+
+typedef enum 
+{
+    RELAY_OPEN    = 0,
+	RELAY_CLOSED  = 1
+} relay_state_t;
+
+
+typedef struct
+{
+	relay_state_t FE_state;
+	relay_state_t CT_state;
+} SIS_state_t;
+
+
+
+typedef enum
+{
+    SWITCH_OFF         = 0,
+	SWITCH_ON          = 1
+} switch_state_t;
+
+
+typedef enum 
+{
+    COMMAND_INACTIVE    = 0,
+	COMMAND_ACTIVE      = 1
+} command_states_t;
+
+
+typedef enum 
+{
+                        //    RGB
+    ALL_OFF     = 0,    // 0b 000
+    B           = 1,    // 0b 001
+    G           = 2,    // 0b 010
+    BG          = 3,    // 0b 011
+    R           = 4,    // 0b 100
+    RB          = 5,    // 0b 101
+    RG          = 6,    // 0b 110
+    RGB         = 7     // 0b 111
+} rgb_led_state_t;
+
+
+typedef enum
+{
+    ZERO    = 0,    // 0b 0000
+    ONE     = 1,    // 0b 0001
+    TWO     = 2,    // 0b 0010
+    THREE   = 3,    // 0b 0011
+    FOUR    = 4,    // 0b 0100
+    FIVE    = 5,    // 0b 0101
+    SIX     = 6,    // 0b 0110
+    SEVEN   = 7,    // 0b 0111
+    EIGHT   = 8,    // 0b 1000
+    NINE    = 9,    // 0b 1001
+    DASH    = 10    // 0b 1001
+} seven_segment_digit_t;
+
+typedef struct 
+{
+  seven_segment_digit_t digit;
+  uint8_t decimal_point;  
+} seven_segment_t;
+
+
+typedef enum {
+	LED_OFF = 0,
+	LED_ON = 1
+}led_state_t;
+
+typedef enum {
+	BUZZER_OFF = 0,
+	BUZZER_ON = 1
+}buzzer_state_t;
+
+typedef enum {
+	CHOP_PROFILE_0 = 0,
+	CHOP_PROFILE_1 = 1,
+	CHOP_PROFILE_2 = 2,
+	CHOP_PROFILE_3 = 3,
+	CHOP_PROFILE_4 = 4
+}chop_profile_t;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -91,6 +204,7 @@ void Error_Handler(void);
 #define BUZZER_C_GPIO_Port GPIOA
 #define CHOP_SEL_Pin GPIO_PIN_6
 #define CHOP_SEL_GPIO_Port GPIOA
+#define CHOP_SEL_EXTI_IRQn EXTI9_5_IRQn
 #define RMII_CRS_DV_Pin GPIO_PIN_7
 #define RMII_CRS_DV_GPIO_Port GPIOA
 #define RMII_RXD0_Pin GPIO_PIN_4
@@ -216,7 +330,7 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 
-#define ESP_UART_HANDLE huart4
+#define WIFI_UART_HANDLE huart4
 #define GPS_UART_HANDLE huart5
 #define RS485_1_UART_HANDLE huart7
 #define RS485_2_UART_HANDLE huart8
@@ -227,7 +341,12 @@ void Error_Handler(void);
 #define SD_SPI_HANDLE hspi4
 #define SD_CS_GPIO_Port GPIOE
 #define SD_CS_Pin GPIO_PIN_11
+#define ADC_HANDLE hadc3
+#define SIS_FAIL_THRESHOLD 0x600 // 3v3=0xfff
 
+#define MAX_LOG_LENGTH 256
+#define MAX_COMMAND_LENGTH 256
+#define BTN_DEBOUNCE_MS 50
 
 /* USER CODE END Private defines */
 

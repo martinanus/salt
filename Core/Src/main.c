@@ -36,7 +36,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-void gpsUARTCallback(UART_HandleTypeDef *huart);
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -46,6 +45,7 @@ void gpsUARTCallback(UART_HandleTypeDef *huart);
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc3;
+DMA_HandleTypeDef hdma_adc3;
 
 I2C_HandleTypeDef hi2c1;
 
@@ -60,12 +60,26 @@ UART_HandleTypeDef huart8;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
-char rxBuff[100];
-char line[100];
-uint8_t charRead;
-uint8_t idx;
-uint8_t new_line;
-char sentence[] = {"$GPRMC"};
+
+
+
+salt_mode_t salt_mode = MODO_NORMAL;
+
+
+char WIFIrxBuff[100];
+char WIFIline[100];
+uint8_t WIFIcharRead;
+uint8_t WIFIidx;
+uint8_t WIFInew_line;
+
+
+char GPSrxBuff[100];
+char GPSline[100];
+uint8_t GPScharRead;
+uint8_t GPSidx;
+uint8_t GPSnew_line;
+
+char GPSsentence[] = {"$GPRMC"};
 struct GPRMC gprms = {
 	    .log_header = "",
 	    .latitude = {0, 0, 0, '\0'},
@@ -79,11 +93,66 @@ FATFS fs;
 const char * local_log_file_name 	= "registro.txt";
 const char * log_timestamp   		= "2024-05-15 12:34:56";
 
+volatile uint16_t adc_results_dma[10];
+volatile uint8_t ADC_ConvCplt = 0;
+const int adcChannelCount = sizeof(adc_results_dma) / sizeof(adc_results_dma[0]);
+
+float speed;
+float hasler_speed;
+float pulse_generator_speed;
+float gps_speed;
+speed_source_t speed_source;
+
+zones_t current_zone;
+
+status_t gps_status;
+
+SIS_state_t SIS_state[5];
+
+switch_state_t MAL_switch_state_1;
+switch_state_t MAL_switch_state_2;
+switch_state_t MAT_switch_state_1;
+switch_state_t MAT_switch_state_2;
+
+char remote_command_buffer[MAX_COMMAND_LENGTH];
+command_states_t remote_command_active;
+
+char local_command_buffer[MAX_COMMAND_LENGTH];
+command_states_t local_command_active;
+
+// RGB
+rgb_led_state_t zone_led;
+
+// only set RG
+rgb_led_state_t SIS_leds[5];
+rgb_led_state_t CT_led;
+rgb_led_state_t FE_led;
+rgb_led_state_t active_command_led;
+rgb_led_state_t gps_led;
+
+// Green leds
+led_state_t power_led;
+led_state_t mode_MAL_led;
+led_state_t mode_MAT_led;
+led_state_t chop_profile_led;
+buzzer_state_t buzzer_state;
+
+seven_segment_t speed_display[4];
+relay_state_t zone_relay; 
+
+char local_log_buffer[MAX_LOG_LENGTH];
+char remote_events_buffer[MAX_LOG_LENGTH];
+
+uint32_t currentMillis;
+uint32_t previousMillis;
+chop_profile_t chop_profile = CHOP_PROFILE_0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_ADC3_Init(void);
 static void MX_I2C1_Init(void);
@@ -95,27 +164,32 @@ static void MX_UART7_Init(void);
 static void MX_UART8_Init(void);
 static void MX_USB_OTG_FS_USB_Init(void);
 /* USER CODE BEGIN PFP */
-void read_system_status(void);
-void read_speed(void);
-void read_hasler_speed(void);
-void read_pulse_generator_speed(void);
-void read_gps_speed(void);
-void read_current_zone(void);
-void read_gps_status(void);
-void read_SIS_status(void);
-void read_activation_switches_state(void);
-void read_MAL_switch_state(void);
-void read_MAT_switch_state(void);
-void read_commands(void);
-void read_remote_command(void);
-void read_local_command(void);
-void display_system_status(void);
-void build_speed_display(void);
-void build_system_status(void);
-void send_system_status(void);
-void activate_zone_relay(void);
-void save_logs_local(void);
-void transmit_events_remote(void);
+void GPS_UART_Callback(UART_HandleTypeDef *huart);
+void WIFI_UART_Callback(UART_HandleTypeDef *huart);
+void Read_SystemStatus(void);
+void Read_Speed(void);
+void Read_HaslerSpeed(void);
+void Read_PulseGeneratorSpeed(void);
+void Read_GPSSpeed(void);
+void Read_CurrentZone(void);
+void Read_GPSStatus(void);
+void Read_SISStatus(void);
+void Read_ActivationSwitchState(void);
+void Read_MALSwitchState(void);
+void Read_MATSwitchState(void);
+void Read_RemoteCommand(void);
+void Read_LocalCommand(void);
+void Display_SystemStatus(void);
+void Build_SpeedDisplay(void);
+void Build_SystemStatus(void);
+void Send_SystemStatus(void);
+void Activate_ZoneRelay(void);
+void Save_LocalLogs(void);
+void Transmit_RemoteEvents(void);
+void Activate_Buzzer(void);
+void Deactivate_Buzzer(void);
+
+
 
 /* USER CODE END PFP */
 
@@ -128,65 +202,89 @@ int _write(int file, char *ptr, int len) {
     return len;
 }
 
-
-void gpsUARTCallback(UART_HandleTypeDef *huart)
+void GPS_UART_Callback(UART_HandleTypeDef *huart)
 {
-	  if (charRead == '$' || idx == 100){
-		  idx = 0;
-		  rxBuff[idx++] = '$';
-	  } else if (charRead == '\r' || charRead == '\n'){
+	  if (GPScharRead == '$' || GPSidx == 100){
+		  GPSidx = 0;
+		  GPSrxBuff[GPSidx++] = '$';
+	  } else if (GPScharRead == '\r' || GPScharRead == '\n'){
 
-		  if (strncmp((char *)rxBuff, sentence, strlen(sentence)) == 0){
-			  rxBuff[idx++] = '\r';
-			  rxBuff[idx++] = '\n';
-			  rxBuff[idx++] = '\0';
-			  memcpy(line, rxBuff, idx);
-			  new_line = 1;
-			  rxBuff[0] = 0;
+		  if (strncmp((char *)GPSrxBuff, GPSsentence, strlen(GPSsentence)) == 0){
+			  GPSrxBuff[GPSidx++] = '\r';
+			  GPSrxBuff[GPSidx++] = '\n';
+			  GPSrxBuff[GPSidx++] = '\0';
+			  memcpy(GPSline, GPSrxBuff, GPSidx);
+			  GPSnew_line = 1;
+			  GPSrxBuff[0] = 0;
 		  } else {
-			  idx = 0;
+			  GPSidx = 0;
 		  }
 	  } else {
-		  rxBuff[idx++] = charRead;
+		  GPSrxBuff[GPSidx++] = GPScharRead;
 	  }
 
 
-	  HAL_UART_Receive_IT(&GPS_UART_HANDLE, &charRead, 1);
+	  HAL_UART_Receive_IT(&GPS_UART_HANDLE, &GPScharRead, 1);
 
 }
 
-
-/* -----------------------------------------------------------------*/
-/* ------------START READING----------------------------------------*/
-/* -----------------------------------------------------------------*/
-
-void read_system_status(void){
-    read_speed();
-    read_current_zone();
-    read_gps_status();
-    read_SIS_status();
-    read_activation_switches_state();	
-    read_commands();	
-}
-
-typedef enum
+void WIFI_UART_Callback(UART_HandleTypeDef *huart)
 {
-  SPEED_NONE        = 0,      
-  HASLER            = 1,      
-  PULSE_GENERATOR   = 2,      
-  GPS               = 3      
-} speed_source_t;
+	  if (WIFIcharRead == '\r' || WIFIcharRead == '\n'){
+		  if (WIFIidx > 0){
+			  memcpy(WIFIline, WIFIrxBuff, WIFIidx);
+			  WIFIline[WIFIidx++] = '\r';
+			  WIFIline[WIFIidx++] = '\n';
+			  WIFIline[WIFIidx] = '\0';
+			  WIFInew_line = 1;
+			  WIFIrxBuff[0] = '\0';
+			  WIFIidx = 0;
+		  }
+	  } else {
+		  WIFIrxBuff[WIFIidx++] = WIFIcharRead;
+	  }
 
-float speed;
-float hasler_speed;
-float pulse_generator_speed;
-float gps_speed;
-speed_source_t speed_source;
+	HAL_UART_Receive_IT(&WIFI_UART_HANDLE, &WIFIcharRead, 1);
 
-void read_speed(void){
-    read_hasler_speed();
-    read_pulse_generator_speed();
-    read_gps_speed();
+}
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+{
+    if (hadc->Instance == ADC3)
+    {
+    	ADC_ConvCplt = 1;
+    	HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*) adc_results_dma, adcChannelCount);
+    }
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN){
+	if (salt_mode == MODO_LIMITADO){
+		currentMillis = HAL_GetTick();
+			if (GPIO_PIN == CHOP_SEL_Pin && currentMillis - previousMillis > BTN_DEBOUNCE_MS){
+				if (chop_profile == CHOP_PROFILE_4) {
+					chop_profile = CHOP_PROFILE_0;
+				} else {
+					chop_profile++;
+				}
+				printf("Chop profile changed to n %d! \n", chop_profile);
+				previousMillis = currentMillis;
+			}
+	}
+}
+
+void Read_SystemStatus(void){
+    Read_Speed();
+    Read_CurrentZone();
+    Read_GPSStatus();
+    Read_SISStatus();
+    Read_ActivationSwitchState();	
+    Read_LocalCommand();
+}
+
+void Read_Speed(void){
+    Read_HaslerSpeed();
+    Read_PulseGeneratorSpeed();
+    Read_GPSSpeed();
 
     if (hasler_speed != -1){
         speed = hasler_speed;
@@ -203,19 +301,20 @@ void read_speed(void){
     }
 }
 
-
-void read_hasler_speed(void){
+void Read_HaslerSpeed(void){
+    // TO BE IMPLEMENTED
     hasler_speed = 14.1;
 }
 
-void read_pulse_generator_speed(void){
+void Read_PulseGeneratorSpeed(void){
+    // TO BE IMPLEMENTED
     pulse_generator_speed = 15.2;
 }
 
-void read_gps_speed(void){
-	if (new_line){
-		  printf(line);
-		  parse_GPRMC((char*)line, &gprms);
+void Read_GPSSpeed(void){
+	if (GPSnew_line){
+		  printf(GPSline);
+		  parse_GPRMC((char*)GPSline, &gprms);
 		  if (gprms.status == 'A' ){
 			  printf("GPS IS ACTIVE \r\n");
 			  print_GPRMC(&gprms);
@@ -224,33 +323,19 @@ void read_gps_speed(void){
 			  printf("GPS IS NOT ACTIVE\r\n");
 			  gps_speed = -1;
 		  }
-		  new_line = 0;
+		  GPSnew_line = 0;
 	}else {
 		gps_speed = -1;
 	}
 }
 
-typedef enum
-{
-    NO_ZONE     = 0,      
-    ZONE_1      = 1,      
-    ZONE_2      = 2,      
-    ZONE_3      = 3   
-} zones_t;
-zones_t current_zone;
-
-void read_current_zone(void){
+void Read_CurrentZone(void){
+	// TO BE IMPLEMENTED
+	// using gprms.latitude  gprms.longitude to calculate distance from origin point
 	current_zone = ZONE_1;
 }
 
-typedef enum
-{
-	STATUS_OK     = 0,
-	STATUS_ERROR  = 1
-} status_t;
-status_t gps_status;
-
-void read_gps_status(void){
+void Read_GPSStatus(void){  
   if (gprms.status == 'A' ){
     gps_status = STATUS_OK;
   }  else {
@@ -259,160 +344,80 @@ void read_gps_status(void){
 	
 }
 
-typedef enum 
-{
-    RELAY_OPEN    = 0,
-	RELAY_CLOSED  = 1
-} relay_state_t;
-relay_state_t SIS_status[5]; 
+void Read_SISStatus(void){
 
-void read_SIS_status(void){
-	SIS_status[0] = RELAY_CLOSED;
-	SIS_status[1] = RELAY_CLOSED;
-	SIS_status[2] = RELAY_OPEN;
-	SIS_status[3] = RELAY_OPEN;
-	SIS_status[4] = RELAY_CLOSED;
-
+	for (int i=0; i<5;i++){
+		if (adc_results_dma[2*i] > SIS_FAIL_THRESHOLD){
+			SIS_state[i].FE_state = RELAY_OPEN;
+		} else {
+			SIS_state[i].FE_state = RELAY_CLOSED;
+		}
+		if (adc_results_dma[2*i+1] > SIS_FAIL_THRESHOLD){
+			SIS_state[i].CT_state = RELAY_OPEN;
+		} else {
+			SIS_state[i].CT_state = RELAY_CLOSED;
+		}
+	}
 }
 
+void Read_ActivationSwitchState(void){
+    Read_MALSwitchState();
+	Read_MATSwitchState();
 
-void read_activation_switches_state(void){
-    read_MAL_switch_state();
-	read_MAT_switch_state();
+	if (MAT_switch_state_1 && MAT_switch_state_2){
+		salt_mode = MODO_TOTAL;
+	} else if (MAL_switch_state_1 && MAL_switch_state_2){
+		salt_mode = MODO_LIMITADO;
+	}else {
+		salt_mode = MODO_NORMAL;
+	}
 }
 
-typedef enum 
-{        
-    SWITCH_OFF         = 0,
-	SWITCH_ON          = 1
-} switch_state_t;
+void Read_MALSwitchState(void){
 
-switch_state_t MAL_switch_state;
+	MAL_switch_state_1 = HAL_GPIO_ReadPin(ON_SW_MAL_1_GPIO_Port, ON_SW_MAL_1_Pin );
+	// MAL_switch_state_1 = SWITCH_ON;
 
-void read_MAL_switch_state(void){
-	MAL_switch_state = SWITCH_ON;
+	MAL_switch_state_2 = HAL_GPIO_ReadPin(ON_SW_MAL_2_GPIO_Port, ON_SW_MAL_2_Pin );
+    //MAL_switch_state_2 = SWITCH_ON;
 }
 
-switch_state_t MAT_switch_state;
+void Read_MATSwitchState(void){
+	MAT_switch_state_1 = HAL_GPIO_ReadPin(ON_SW_MAT_1_GPIO_Port, ON_SW_MAT_1_Pin );
+	// MAT_switch_state_1 = SWITCH_ON;
 
-void read_MAT_switch_state(void){
-	MAT_switch_state= SWITCH_ON;
+	MAT_switch_state_2 = HAL_GPIO_ReadPin(ON_SW_MAT_2_GPIO_Port, ON_SW_MAT_2_Pin );
+	//MAT_switch_state_2 = SWITCH_ON;
 }
 
-#define MAX_COMMAND_LENGTH 256
-typedef enum 
-{
-    COMMAND_INACTIVE    = 0,
-	COMMAND_ACTIVE      = 1
-} command_states_t;
-
-void read_commands(void){
-    read_remote_command(); 
-	read_local_command(); 
+void Read_RemoteCommand(void){
+	if (WIFInew_line){
+		  printf(WIFIline);
+		  remote_command_active = COMMAND_ACTIVE;
+		  sprintf(remote_command_buffer, WIFIline);
+		  WIFInew_line = 0;
+	}else {
+		remote_command_active = COMMAND_INACTIVE;
+		sprintf(remote_command_buffer, "NO COMM");
+	}
 }
 
-char remote_command_buffer[MAX_COMMAND_LENGTH];
-command_states_t remote_command_active;
-
-void read_remote_command(void){
-	remote_command_active = COMMAND_INACTIVE;
-	sprintf(remote_command_buffer, "NO COMM");
-}
-
-char local_command_buffer[MAX_COMMAND_LENGTH];
-command_states_t local_command_active;
-void read_local_command(void){
+void Read_LocalCommand(void){
 	local_command_active = COMMAND_ACTIVE;
 	sprintf(local_command_buffer, "myLocCom");
 }
 
-
-/* -----------------------------------------------------------------*/
-/* ------------END READING------------------------------------------*/
-/* -----------------------------------------------------------------*/
-
-/* -----------------------------------------------------------------*/
-/* ------------START DISPLAYING-------------------------------------*/
-/* -----------------------------------------------------------------*/
-
-void display_system_status(void){    
-    build_system_status();
-    send_system_status();
+void Display_SystemStatus(void){    
+    Build_SystemStatus();
+    Send_SystemStatus();
 }
 
-typedef enum 
-{
-                        //    RGB
-    ALL_OFF     = 0,    // 0b 000
-    B           = 1,    // 0b 001
-    G           = 2,    // 0b 010
-    BG          = 3,    // 0b 011
-    R           = 4,    // 0b 100
-    RB          = 5,    // 0b 101
-    RG          = 6,    // 0b 110
-    RGB         = 7     // 0b 111
-} rgb_led_state_t;
-
-
-
-
-typedef enum
-{
-    ZERO    = 0,    // 0b 0000
-    ONE     = 1,    // 0b 0001
-    TWO     = 2,    // 0b 0010
-    THREE   = 3,    // 0b 0011
-    FOUR    = 4,    // 0b 0100
-    FIVE    = 5,    // 0b 0101
-    SIX     = 6,    // 0b 0110
-    SEVEN   = 7,    // 0b 0111
-    EIGHT   = 8,    // 0b 1000
-    NINE    = 9,    // 0b 1001
-    DASH    = 10    // 0b 1001
-} seven_segment_digit_t;
-
-typedef struct 
-{
-  seven_segment_digit_t digit;
-  uint8_t decimal_point;  
-} seven_segment_t;
-
-
-// RGB
-rgb_led_state_t zone_led;
-
-// only set RG
-rgb_led_state_t SIS_leds[5];
-rgb_led_state_t CT_led;
-rgb_led_state_t FE_led;
-rgb_led_state_t active_command_led;
-rgb_led_state_t gps_led;
-
-typedef enum {
-	LED_OFF = 0,
-	LED_ON = 1
-}led_state_t;
-
-typedef enum {
-	BUZZER_OFF = 0,
-	BUZZER_ON = 1
-}buzzer_state_t;
-
-// Green leds
-led_state_t power_led;
-led_state_t mode_MAL_led;
-led_state_t mode_MAT_led;
-led_state_t chop_profile_led;
-buzzer_state_t buzzer_state;
-
-
-seven_segment_t speed_display[4];
-
-void build_system_status(void){
-    build_speed_display();
+void Build_SystemStatus(void){
+    // TO BE IMPLEMENTED
+    Build_SpeedDisplay();
 }
 
-void build_speed_display(void){
+void Build_SpeedDisplay(void){
     int integer_part = (int) speed;
     int decimal_part = (int)((speed - integer_part) *10);
     if (speed_source == SPEED_NONE){
@@ -435,50 +440,43 @@ void build_speed_display(void){
     }
 }
 
-void send_system_status(void){
+void Send_SystemStatus(void){
 	// I2C transmit all status
+  // TO BE IMPLEMENTED
 }
 
 
-/* -----------------------------------------------------------------*/
-/* ------------END DISPLAYING---------------------------------------*/
-/* -----------------------------------------------------------------*/
-
-/* -----------------------------------------------------------------*/
-/* ------------START RELE ACTIVATIONS-------------------------------*/
-/* -----------------------------------------------------------------*/
-relay_state_t zone_relay; 
-void activate_zone_relay(void){
+void Activate_ZoneRelay(void){
     if (current_zone == ZONE_3){
     	zone_relay = RELAY_CLOSED;
     }
 }
 
-/* -----------------------------------------------------------------*/
-/* ------------END RELE ACTIVATIONS---------------------------------*/
-/* -----------------------------------------------------------------*/
 
-
-/* -----------------------------------------------------------------*/
-/* ------------START LOGGING----------------------------------------*/
-/* -----------------------------------------------------------------*/
-#define MAX_LOG_LENGTH 256
-char local_log_buffer[MAX_LOG_LENGTH];
-void save_logs_local(void){
+void Save_LocalLogs(void){
+  // TO BE IMPLEMENTED
+  // What should I log here? 
 	sprintf(local_log_buffer, "this is my local log");
 	//log_event(local_log_file_name, log_timestamp, local_log_buffer);
 	printf("%s: %s wrote in file: %s\r\n", log_timestamp, local_log_buffer, local_log_file_name);
 }
 
-char remote_events_buffer[MAX_LOG_LENGTH];
-void transmit_events_remote(void){
-	sprintf(remote_events_buffer, "This is my event");
+
+void Transmit_RemoteEvents(void){
+  // TO BE IMPLEMENTED
+  // What should I send here? 
+	sprintf(remote_events_buffer, "This is my event\n");
+	HAL_UART_Transmit(&WIFI_UART_HANDLE, (uint8_t*)remote_events_buffer, strlen(remote_events_buffer), HAL_MAX_DELAY);
 }
 
+void Activate_Buzzer(void){
+  HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, BUZZER_ON);
+}
 
-/* -----------------------------------------------------------------*/
-/* ------------END LOGGING------------------------------------------*/
-/* -----------------------------------------------------------------*/
+void Deactivate_Buzzer(void){
+  HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, BUZZER_OFF);
+}
+
 
 /* USER CODE END 0 */
 
@@ -510,6 +508,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART3_UART_Init();
   MX_ADC3_Init();
   MX_I2C1_Init();
@@ -522,14 +521,20 @@ int main(void)
   MX_USB_OTG_FS_USB_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
-
   mount_filesystem(&fs);
   //log_event(local_log_file_name, log_timestamp, "SD started OK");
   printf("%s: %s wrote in file: %s\r\n", log_timestamp, "SD started OK", local_log_file_name);
 
+  // Start GPS Callback
+  HAL_UART_RegisterCallback(&GPS_UART_HANDLE, HAL_UART_RX_COMPLETE_CB_ID, GPS_UART_Callback);
+  HAL_UART_Receive_IT(&GPS_UART_HANDLE, &GPScharRead, 1);
 
-  HAL_UART_RegisterCallback(&GPS_UART_HANDLE, HAL_UART_RX_COMPLETE_CB_ID, gpsUARTCallback);
-  HAL_UART_Receive_IT(&GPS_UART_HANDLE, &charRead, 1);
+  // Start WIFI Callback
+    HAL_UART_RegisterCallback(&WIFI_UART_HANDLE, HAL_UART_RX_COMPLETE_CB_ID, WIFI_UART_Callback);
+    HAL_UART_Receive_IT(&WIFI_UART_HANDLE, &WIFIcharRead, 1);
+
+  // Start first ADC conversion
+    HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*) adc_results_dma, adcChannelCount);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -539,19 +544,66 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	read_system_status();
-	display_system_status();
-	activate_zone_relay();
-	transmit_events_remote();
-	//save_logs_local();
+
+	if (salt_mode == MODO_NORMAL){
+    // TO BE IMPLEMENTED
+		// Transaction btw mode should be configured
+		// Deactivate_Buzzer();
+    // Deactivate_SISBypass();
+    // Deactivate_MQTTCommands();
+    // Release_CriticalSignals();
 
 
-	/*printf("Speed is: %f according to source %d \r\n", speed, speed_source);
+		Read_SystemStatus();
+		Display_SystemStatus();
+		Activate_ZoneRelay();
+		Transmit_RemoteEvents();
+		Save_LocalLogs();
+	} else if (salt_mode == MODO_LIMITADO){
+		// TO BE IMPLEMENTED
+		// Transaction btw mode should be configured
+		// Activate_Buzzer();
+    // Activate_SISBypass();
+    
+    Read_RemoteCommand(); 
+    // Display_ActiveMQTTCommands();
+    // Control_CriticalSignals();
+    // Display_CriticalSignals();
+    // Read_ChoppProfileSelector();
+    // Display_ActiveChoppProfile();
+    
+
+		;
+	} else if (salt_mode == MODO_TOTAL){
+		// TO BE IMPLEMENTED
+		// Transaction btw mode should be configured
+		// Activate_Buzzer();
+    // Activate_SISBypass();
+    // Activate_MQTTCommands();
+    // Release_CriticalSignals();
+
+		;
+	}
+
+	HAL_Delay(1000);
+
+
+
+	/*
+	if (ADC_ConvCplt){
+		for (int i=0; i<10;i++){
+			printf("Read value %d: 0x%.3x\r\n", i, adc_results_dma[i]);
+		}
+		ADC_ConvCplt = 0;
+
+	}
+
+	printf("Speed is: %f according to source %d \r\n", speed, speed_source);
 	for (int i=0; i<4;i++){
 		printf("Speed digit %d is: %d with decimal %d\r\n",i, speed_display[i].digit, speed_display[i].decimal_point);
 	}*/
 
-	HAL_Delay(1000);
+
   }
   /* USER CODE END 3 */
 }
@@ -623,17 +675,17 @@ static void MX_ADC3_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc3.Instance = ADC3;
-  hadc3.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc3.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
   hadc3.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc3.Init.ScanConvMode = DISABLE;
+  hadc3.Init.ScanConvMode = ENABLE;
   hadc3.Init.ContinuousConvMode = DISABLE;
   hadc3.Init.DiscontinuousConvMode = DISABLE;
   hadc3.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc3.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc3.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc3.Init.NbrOfConversion = 1;
+  hadc3.Init.NbrOfConversion = 10;
   hadc3.Init.DMAContinuousRequests = DISABLE;
-  hadc3.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc3.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   if (HAL_ADC_Init(&hadc3) != HAL_OK)
   {
     Error_Handler();
@@ -641,9 +693,90 @@ static void MX_ADC3_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_6;
+  sConfig.Channel = ADC_CHANNEL_15;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_14;
+  sConfig.Rank = 2;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_12;
+  sConfig.Rank = 3;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_10;
+  sConfig.Rank = 4;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_13;
+  sConfig.Rank = 5;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_6;
+  sConfig.Rank = 6;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_7;
+  sConfig.Rank = 7;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_3;
+  sConfig.Rank = 8;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_8;
+  sConfig.Rank = 9;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_9;
+  sConfig.Rank = 10;
   if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -990,6 +1123,22 @@ static void MX_USB_OTG_FS_USB_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -1088,7 +1237,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : CHOP_SEL_Pin */
   GPIO_InitStruct.Pin = CHOP_SEL_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(CHOP_SEL_GPIO_Port, &GPIO_InitStruct);
 
@@ -1175,6 +1324,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
   HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
