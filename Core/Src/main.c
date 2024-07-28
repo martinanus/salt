@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "string.h"
 #include "stdio.h"
+#include "led_driver.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,7 +48,10 @@ UART_HandleTypeDef huart3;
 
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
+
 /* USER CODE BEGIN PV */
+HAL_I2C_StateTypeDef i2c_state;
+HAL_StatusTypeDef result;
 
 /* USER CODE END PV */
 
@@ -69,15 +73,7 @@ int _write(int file, char *ptr, int len) {
     return len;
 }
 
-void I2C_Reset(I2C_HandleTypeDef *hi2c)
-{
-    __HAL_RCC_I2C1_FORCE_RESET();
-    HAL_Delay(1); // Small delay
-    __HAL_RCC_I2C1_RELEASE_RESET();
 
-    // Reinitialize the I2C peripheral
-    HAL_I2C_Init(hi2c);
-}
 /* USER CODE END 0 */
 
 /**
@@ -112,16 +108,18 @@ int main(void)
   MX_USB_OTG_FS_PCD_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
+  uint8_t digitIn7Segment;
 
   // Call I2C reset function after initialization
   // Call it if a Transmit return HAL_BUSY state
    I2C_Reset(&hi2c1);
 
-  HAL_StatusTypeDef result;
+  
+  i2c_state = HAL_I2C_GetState(&I2C_HANDLE);
+  printf("i2c_state is %d", i2c_state);
+  
+  LedDriver_Init(&I2C_HANDLE);
 
-  uint8_t data[2];
-
-  HAL_I2C_StateTypeDef i2c_state = HAL_I2C_GetState(&hi2c1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -131,57 +129,36 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+  
+  result = LedDriver_WriteReg(DECODE_ENABLE_REG_ADDR, NO_DECODE_MODE, &I2C_HANDLE);
 
-	data[0] = 0x0C;	// Shutdown mode register
-	data[1] = 0x01;	// Normal Operation
-	result = HAL_I2C_Master_Transmit(&hi2c1, AS1115_I2C_ADDRESS << 1, data, 2, HAL_MAX_DELAY);
 
-    data[0] = 0x0B;	// Scan-Limit Register
-    data[1] = 0x07;	// Display digits: 0:7
-    result = HAL_I2C_Master_Transmit(&hi2c1, AS1115_I2C_ADDRESS << 1, data, 2, HAL_MAX_DELAY);
-
-    data[0] = 0x0A;	// Global register intensity
-	data[1] = 0x09;	// Middle value 0x01-0x0F
-	result = HAL_I2C_Master_Transmit(&hi2c1, AS1115_I2C_ADDRESS << 1, data, 2, HAL_MAX_DELAY);
-
-	data[0] = 0x09;	// Decode enable register
-	data[1] = 0x00;	// No decode for digits 7:0
-	result = HAL_I2C_Master_Transmit(&hi2c1, AS1115_I2C_ADDRESS << 1, data, 2, HAL_MAX_DELAY);
-
-	for (uint8_t digit =0x01 ; digit<=0x08 ; digit++){
-	    	data[0] = digit;
-	    	data[1] = 0x00;	// All segments OFF
-	    	result = HAL_I2C_Master_Transmit(&hi2c1, AS1115_I2C_ADDRESS << 1, data, 2, HAL_MAX_DELAY);
+	for (uint8_t digit_addr =0x01 ; digit_addr<=0x08 ; digit_addr++){	    	
+        result = LedDriver_WriteReg(digit_addr, 0x00, &I2C_HANDLE);
 	    }
 
 	HAL_Delay(1000);
 
-    for (uint8_t digit =0x01 ; digit<=0x08 ; digit++){
-    	data[0] = digit;
-    	data[1] = 0xFF;	// All segments ON
-    	result = HAL_I2C_Master_Transmit(&hi2c1, AS1115_I2C_ADDRESS << 1, data, 2, HAL_MAX_DELAY);
+    for (uint8_t digit_addr =0x01 ; digit_addr<=0x08 ; digit_addr++){
+      result = LedDriver_WriteReg(digit_addr, 0xFF, &I2C_HANDLE);
     	HAL_Delay(500);
     }
 
     HAL_Delay(2000);
 
-    for (uint8_t digit =0x01 ; digit<=0x08 ; digit++){
-    	data[0] = digit;
-    	data[1] = 0x00;	// All segments OFF
-    	result = HAL_I2C_Master_Transmit(&hi2c1, AS1115_I2C_ADDRESS << 1, data, 2, HAL_MAX_DELAY);
+    for (uint8_t digit_addr =0x01 ; digit_addr<=0x08 ; digit_addr++){
+      result = LedDriver_WriteReg(digit_addr, 0x00, &I2C_HANDLE);
     	HAL_Delay(500);
     }
 
-	data[0] = 0x09;	// Decode enable register
-	data[1] = 0x3F;	// Code-B/HEX decode for digits 0:5. No decode for digits 7:6
-    result = HAL_I2C_Master_Transmit(&hi2c1, AS1115_I2C_ADDRESS << 1, data, 2, HAL_MAX_DELAY);
+    //result = LedDriver_WriteReg(DECODE_ENABLE_REG_ADDR, DECODE_DIGIT_0_TO_5_MODE, &I2C_HANDLE);
+    
 
-	 for (uint8_t digit =0x01 ; digit<=0x08 ; digit++){
-	    	data[0] = digit;
-	    	data[1] = digit;	// Digit
-	    	result = HAL_I2C_Master_Transmit(&hi2c1, AS1115_I2C_ADDRESS << 1, data, 2, HAL_MAX_DELAY);
-	    	HAL_Delay(500);
-	    }
+    for (uint8_t digit_addr =0x01 ; digit_addr<=0x08 ; digit_addr++){      
+      digitIn7Segment = digitTo7Segment(digit_addr);
+      result = LedDriver_WriteReg(digit_addr, digitIn7Segment, &I2C_HANDLE);
+    	HAL_Delay(500);
+    }
 
 	HAL_Delay(2000);
 

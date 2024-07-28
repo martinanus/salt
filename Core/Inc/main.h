@@ -109,8 +109,9 @@ void Error_Handler(void);
 #define LD2_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
-#define AS1115_I2C_ADDRESS 0
 #define DEBUG_HUART huart3
+#define I2C_HANDLE hi2c1
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
