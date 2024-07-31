@@ -133,20 +133,20 @@ int main(void)
   result = LedDriver_WriteReg(DECODE_ENABLE_REG_ADDR, NO_DECODE_MODE, &I2C_HANDLE);
 
 
-	for (uint8_t digit_addr =0x01 ; digit_addr<=0x08 ; digit_addr++){	    	
+	for (uint8_t digit_addr =START_DIGIT_ADDRESS ; digit_addr<=END_DIGIT_ADDRESS ; digit_addr++){	    	
         result = LedDriver_WriteReg(digit_addr, 0x00, &I2C_HANDLE);
 	    }
 
 	HAL_Delay(1000);
 
-    for (uint8_t digit_addr =0x01 ; digit_addr<=0x08 ; digit_addr++){
+    for (uint8_t digit_addr =START_DIGIT_ADDRESS ; digit_addr<=END_DIGIT_ADDRESS ; digit_addr++){
       result = LedDriver_WriteReg(digit_addr, 0xFF, &I2C_HANDLE);
     	HAL_Delay(500);
     }
 
     HAL_Delay(2000);
 
-    for (uint8_t digit_addr =0x01 ; digit_addr<=0x08 ; digit_addr++){
+    for (uint8_t digit_addr =START_DIGIT_ADDRESS ; digit_addr<=END_DIGIT_ADDRESS ; digit_addr++){
       result = LedDriver_WriteReg(digit_addr, 0x00, &I2C_HANDLE);
     	HAL_Delay(500);
     }
@@ -154,7 +154,7 @@ int main(void)
     //result = LedDriver_WriteReg(DECODE_ENABLE_REG_ADDR, DECODE_DIGIT_0_TO_5_MODE, &I2C_HANDLE);
     
 
-    for (uint8_t digit_addr =0x01 ; digit_addr<=0x08 ; digit_addr++){      
+    for (uint8_t digit_addr =START_DIGIT_ADDRESS ; digit_addr<=END_DIGIT_ADDRESS ; digit_addr++){      
       digitIn7Segment = digitTo7Segment(digit_addr);
       result = LedDriver_WriteReg(digit_addr, digitIn7Segment, &I2C_HANDLE);
     	HAL_Delay(500);

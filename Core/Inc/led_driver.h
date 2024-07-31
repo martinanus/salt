@@ -14,6 +14,8 @@
 
 
 #define AS1115_I2C_ADDRESS 0x00
+#define START_DIGIT_ADDRESS 0x01
+#define END_DIGIT_ADDRESS 0x08
 #define SHUTDOWN_REG_ADDR 0x0C
 #define SHUTDOWN_MODE 0x00
 #define NORMAL_OPERATION_MODE 0x01
@@ -28,10 +30,11 @@
 #define DECODE_ENABLE_REG_ADDR 0x09
 #define NO_DECODE_MODE 0x00
 #define DECODE_DIGIT_0_TO_5_MODE 0x3F
+#define DECIMAL_POINT_MASK 0x80
 
 void I2C_Reset(I2C_HandleTypeDef *hi2c);
 HAL_StatusTypeDef LedDriver_WriteReg(uint8_t reg_address, uint8_t reg_value, I2C_HandleTypeDef *hi2c);
-void LedDriver_Init(I2C_HandleTypeDef *hi2c);
+HAL_StatusTypeDef LedDriver_Init(I2C_HandleTypeDef *hi2c);
 uint8_t digitTo7Segment(uint8_t digit);
 
 
