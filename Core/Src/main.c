@@ -26,6 +26,7 @@
 #include "string.h"
 #include "gps.h"
 #include "sd.h"
+#include "led_driver.h"
 
 /* USER CODE END Includes */
 
@@ -125,19 +126,26 @@ rgb_led_state_t zone_led;
 
 // only set RG
 rgb_led_state_t SIS_leds[5];
-rgb_led_state_t CT_led;
-rgb_led_state_t FE_led;
+rgb_led_state_t mode_MAL_led;
+rgb_led_state_t mode_MAT_led;
 rgb_led_state_t active_command_led;
 rgb_led_state_t gps_led;
 
 // Green leds
 led_state_t power_led;
-led_state_t mode_MAL_led;
-led_state_t mode_MAT_led;
-led_state_t chop_profile_led;
+led_state_t CT_led;
+led_state_t FE_led;
+led_state_t chop_profile_leds[5];
+
 buzzer_state_t buzzer_state;
 
-seven_segment_t speed_display[4];
+uint8_t digit4_reg_value;
+uint8_t digit5_reg_value;
+uint8_t digit6_reg_value;
+uint8_t digit7_reg_value;
+
+
+uint8_t digit7Segment[4];
 relay_state_t zone_relay; 
 
 char local_log_buffer[MAX_LOG_LENGTH];
@@ -146,6 +154,9 @@ char remote_events_buffer[MAX_LOG_LENGTH];
 uint32_t currentMillis;
 uint32_t previousMillis;
 chop_profile_t chop_profile = CHOP_PROFILE_0;
+
+HAL_I2C_StateTypeDef i2c_state;
+HAL_StatusTypeDef result;
 
 /* USER CODE END PV */
 
@@ -166,6 +177,7 @@ static void MX_USB_OTG_FS_USB_Init(void);
 /* USER CODE BEGIN PFP */
 void GPS_UART_Callback(UART_HandleTypeDef *huart);
 void WIFI_UART_Callback(UART_HandleTypeDef *huart);
+void Led_Init();
 void Read_SystemStatus(void);
 void Read_Speed(void);
 void Read_HaslerSpeed(void);
@@ -180,8 +192,15 @@ void Read_MATSwitchState(void);
 void Read_RemoteCommand(void);
 void Read_LocalCommand(void);
 void Display_SystemStatus(void);
-void Build_SpeedDisplay(void);
 void Build_SystemStatus(void);
+void Build_SpeedDisplay(void);
+void Build_LedIndicators(void);
+uint8_t extractBit(rgb_led_state_t state, uint8_t bitPos);
+void setOrClearBit(uint8_t *byteVal, uint8_t bitPos, uint8_t value);
+void setDigit4_regValue(void);
+void setDigit5_regValue(void);
+void setDigit6_regValue(void);
+void setDigit7_regValue(void);
 void Send_SystemStatus(void);
 void Activate_ZoneRelay(void);
 void Save_LocalLogs(void);
@@ -272,6 +291,34 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN){
 	}
 }
 
+
+void Led_Init(){
+  // LED RGB
+  zone_led                = LED_G;
+  SIS_leds[0]             = LED_G;
+  SIS_leds[1]             = LED_G;
+  SIS_leds[2]             = LED_G;
+  SIS_leds[3]             = LED_G;
+  SIS_leds[4]             = LED_G;
+  active_command_led      = LED_ALL_OFF;
+  gps_led                 = LED_G;  
+  mode_MAL_led            = LED_ALL_OFF;
+  mode_MAT_led            = LED_ALL_OFF;
+
+  // Green LED
+  power_led               = LED_ON;
+  CT_led                  = LED_OFF;
+  FE_led                  = LED_OFF;
+  chop_profile_leds[0]    = LED_OFF;
+  chop_profile_leds[1]    = LED_OFF;
+  chop_profile_leds[2]    = LED_OFF;
+  chop_profile_leds[3]    = LED_OFF;
+  chop_profile_leds[4]    = LED_OFF;
+}
+
+
+
+
 void Read_SystemStatus(void){
     Read_Speed();
     Read_CurrentZone();
@@ -303,12 +350,12 @@ void Read_Speed(void){
 
 void Read_HaslerSpeed(void){
     // TO BE IMPLEMENTED
-    hasler_speed = 14.1;
+    hasler_speed = 115.9;
 }
 
 void Read_PulseGeneratorSpeed(void){
     // TO BE IMPLEMENTED
-    pulse_generator_speed = 15.2;
+    pulse_generator_speed = 95.2;
 }
 
 void Read_GPSSpeed(void){
@@ -413,11 +460,12 @@ void Display_SystemStatus(void){
 }
 
 void Build_SystemStatus(void){
-    // TO BE IMPLEMENTED
     Build_SpeedDisplay();
+    Build_LedIndicators();
 }
 
 void Build_SpeedDisplay(void){
+	seven_segment_t speed_display[4];
     int integer_part = (int) speed;
     int decimal_part = (int)((speed - integer_part) *10);
     if (speed_source == SPEED_NONE){
@@ -438,11 +486,131 @@ void Build_SpeedDisplay(void){
         speed_display[3].digit = decimal_part;
         speed_display[3].decimal_point = 0;
     }
+
+    for (uint8_t digit=0; digit < 4 ; digit++){
+        digit7Segment[digit]= digitTo7Segment(speed_display[digit].digit);
+
+        if (speed_display[digit].decimal_point){
+      	  digit7Segment[digit]|= DECIMAL_POINT_MASK;
+        }
+
+    }
 }
 
+void Build_LedIndicators(){
+  setDigit4_regValue();
+  setDigit5_regValue();
+  setDigit6_regValue();
+  setDigit7_regValue();
+}
+
+uint8_t extractBit(rgb_led_state_t state, uint8_t bitPos) {
+    return (state >> bitPos) & 0x01;
+}
+
+void setOrClearBit(uint8_t *byteVal, uint8_t bitPos, uint8_t value) {
+    if (value) {
+        *byteVal |= (1 << bitPos);  // Set the bit
+    } else {
+        *byteVal &= ~(1 << bitPos); // Clear the bit
+    }
+}
+
+void setDigit4_regValue(){
+    uint8_t byteVal = 0x00;
+
+    uint8_t D7_DP = chop_profile_leds[0];               // LED14      - CC_4 - A_DP - CHOP_1
+    uint8_t D6_A = extractBit(mode_MAL_led, 1);         // LED2_GREEN - CC_4 - A_A  - MODO LIMITADO
+    uint8_t D5_B = extractBit(mode_MAT_led, 1);         // LED3_GREEN - CC_4 - A_B  - MODO TOTAL
+    uint8_t D4_C = extractBit(active_command_led, 1);   // LED4_GREEN - CC_4 - A_C  - COMANDO REMOTO
+    uint8_t D3_D = extractBit(gps_led, 1);              // LED5_GREEN - CC_4 - A_D  - GPS
+    uint8_t D2_E = extractBit(zone_led, 1);             // LED6_GREEN - CC_4 - A_E  - ZONA
+    uint8_t D1_F = extractBit(SIS_leds[0], 1);          // LED7_GREEN - CC_4 - A_F  - SIS_1
+    uint8_t D0_G = chop_profile_leds[1];                // LED15      - CC_4 - A_G  - CHOP_2
+    
+    uint8_t vars[8] = {D0_G, D1_F, D2_E, D3_D, D4_C, D5_B, D6_A, D7_DP};
+
+    
+    for (uint8_t i = 0; i < 8; i++) {
+        setOrClearBit(&byteVal, i, vars[i]);
+    }
+
+    digit4_reg_value = byteVal;
+}
+
+void setDigit5_regValue(){
+    uint8_t byteVal = 0x00; 
+
+    uint8_t D7_DP = power_led;                          //  LED1      - CC_5 - A_DP - POWER
+    uint8_t D6_A = extractBit(mode_MAL_led, 2);         //  LED2_RED  - CC_5 - A_A  - MODO LIMITADO
+    uint8_t D5_B = extractBit(mode_MAT_led, 2);         //  LED3_RED  - CC_5 - A_B  - MODO TOTAL
+    uint8_t D4_C = extractBit(active_command_led, 2);   //  LED4_RED  - CC_5 - A_C  - COMANDO REMOTO
+    uint8_t D3_D = extractBit(gps_led, 2);              //  LED5_RED  - CC_5 - A_D  - GPS
+    uint8_t D2_E = extractBit(zone_led, 2);             //  LED6_RED  - CC_5 - A_E  - ZONA
+    uint8_t D1_F = extractBit(SIS_leds[0], 2);          //  LED7_RED  - CC_5 - A_F  - SIS_1
+    uint8_t D0_G = chop_profile_leds[2];                //  LED16     - CC_5 - A_G  - CHOP_3
+    
+    uint8_t vars[8] = {D0_G, D1_F, D2_E, D3_D, D4_C, D5_B, D6_A, D7_DP};
+
+    for (uint8_t i = 0; i < 8; i++) {
+        setOrClearBit(&byteVal, i, vars[i]);
+    }
+
+    digit5_reg_value = byteVal;
+}
+
+void setDigit6_regValue(){
+    uint8_t byteVal = 0x00; 
+
+    uint8_t D7_DP = CT_led;                             // LED12       - CC_6 - A_DP - CT
+    uint8_t D6_A = extractBit(SIS_leds[1], 1);          // LED8_GREEN  - CC_6 - A_A  - SIS_2
+    uint8_t D5_B = extractBit(SIS_leds[2], 1);          // LED9_GREEN  - CC_6 - A_B  - SIS_3
+    uint8_t D4_C = extractBit(SIS_leds[3], 1);          // LED10_GREEN - CC_6 - A_C  - SIS_4
+    uint8_t D3_D = extractBit(SIS_leds[4], 1);          // LED11_GREEN - CC_6 - A_D  - SIS_5
+    uint8_t D2_E = 0;                                   // NC          - CC_6 - A_E  - NC
+    uint8_t D1_F = extractBit(SIS_leds[0], 0);          // LED7_BLUE   - CC_6 - A_F  - SIS_1 --> ZONA
+    uint8_t D0_G = chop_profile_leds[3];                // LED17       - CC_6 - A_G  - CHOP_4
+    
+    uint8_t vars[8] = {D0_G, D1_F, D2_E, D3_D, D4_C, D5_B, D6_A, D7_DP};
+
+    for (uint8_t i = 0; i < 8; i++) {
+        setOrClearBit(&byteVal, i, vars[i]);
+    }
+
+    digit6_reg_value = byteVal;
+}
+
+void setDigit7_regValue(){
+    uint8_t byteVal = 0x00; 
+
+    uint8_t D7_DP = FE_led;                             // LED13     - CC_7 - A_DP - FE
+    uint8_t D6_A = extractBit(SIS_leds[1], 2);          // LED8_RED  - CC_7 - A_A  - SIS_2
+    uint8_t D5_B = extractBit(SIS_leds[2], 2);          // LED9_RED  - CC_7 - A_B  - SIS_3
+    uint8_t D4_C = extractBit(SIS_leds[3], 2);          // LED10_RED - CC_7 - A_C  - SIS_4
+    uint8_t D3_D = extractBit(SIS_leds[4], 2);          // LED11_RED - CC_7 - A_D  - SIS_5
+    uint8_t D2_E = 0;                                   // NC        - CC_7 - A_E  - NC
+    uint8_t D1_F = 0;                                   // NC        - CC_7 - A_F  - NC
+    uint8_t D0_G = chop_profile_leds[4];                // LED18     - CC_7 - A_G  - CHOP_5
+    
+    uint8_t vars[8] = {D0_G, D1_F, D2_E, D3_D, D4_C, D5_B, D6_A, D7_DP};
+
+    for (uint8_t i = 0; i < 8; i++) {
+        setOrClearBit(&byteVal, i, vars[i]);
+    }
+
+    digit7_reg_value = byteVal;
+}
+
+
 void Send_SystemStatus(void){
-	// I2C transmit all status
-  // TO BE IMPLEMENTED
+
+  for (uint8_t digit=0; digit < 4 ; digit++){
+      result = LedDriver_WriteReg(digit + 1, digit7Segment[digit], &I2C_HANDLE);
+  }
+  result = LedDriver_WriteReg(0x05, digit4_reg_value, &I2C_HANDLE);
+  result = LedDriver_WriteReg(0x06, digit5_reg_value, &I2C_HANDLE);
+  result = LedDriver_WriteReg(0x07, digit6_reg_value, &I2C_HANDLE);
+  result = LedDriver_WriteReg(0x08, digit7_reg_value, &I2C_HANDLE);
 }
 
 
@@ -521,6 +689,7 @@ int main(void)
   MX_USB_OTG_FS_USB_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
+
   mount_filesystem(&fs);
   //log_event(local_log_file_name, log_timestamp, "SD started OK");
   printf("%s: %s wrote in file: %s\r\n", log_timestamp, "SD started OK", local_log_file_name);
@@ -530,11 +699,23 @@ int main(void)
   HAL_UART_Receive_IT(&GPS_UART_HANDLE, &GPScharRead, 1);
 
   // Start WIFI Callback
-    HAL_UART_RegisterCallback(&WIFI_UART_HANDLE, HAL_UART_RX_COMPLETE_CB_ID, WIFI_UART_Callback);
-    HAL_UART_Receive_IT(&WIFI_UART_HANDLE, &WIFIcharRead, 1);
+  HAL_UART_RegisterCallback(&WIFI_UART_HANDLE, HAL_UART_RX_COMPLETE_CB_ID, WIFI_UART_Callback);
+  HAL_UART_Receive_IT(&WIFI_UART_HANDLE, &WIFIcharRead, 1);
 
   // Start first ADC conversion
-    HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*) adc_results_dma, adcChannelCount);
+  HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*) adc_results_dma, adcChannelCount);
+
+    
+  I2C_Reset(&hi2c1);
+  i2c_state = HAL_I2C_GetState(&I2C_HANDLE);
+  printf("i2c_state is %d", i2c_state);
+  result = LedDriver_Init(&I2C_HANDLE);
+  printf("Led driver initializated");
+
+  Led_Init();
+
+  
+
   /* USER CODE END 2 */
 
   /* Infinite loop */

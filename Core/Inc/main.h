@@ -100,14 +100,14 @@ typedef enum
 typedef enum 
 {
                         //    RGB
-    ALL_OFF     = 0,    // 0b 000
-    B           = 1,    // 0b 001
-    G           = 2,    // 0b 010
-    BG          = 3,    // 0b 011
-    R           = 4,    // 0b 100
-    RB          = 5,    // 0b 101
-    RG          = 6,    // 0b 110
-    RGB         = 7     // 0b 111
+    LED_ALL_OFF     = 0,    // 0b 000
+    LED_B           = 1,    // 0b 001
+    LED_G           = 2,    // 0b 010
+    LED_BG          = 3,    // 0b 011
+    LED_R           = 4,    // 0b 100
+    LED_RB          = 5,    // 0b 101
+    LED_RG          = 6,    // 0b 110
+    LED_RGB         = 7     // 0b 111
 } rgb_led_state_t;
 
 
