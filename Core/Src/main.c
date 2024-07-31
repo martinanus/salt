@@ -177,7 +177,8 @@ static void MX_USB_OTG_FS_USB_Init(void);
 /* USER CODE BEGIN PFP */
 void GPS_UART_Callback(UART_HandleTypeDef *huart);
 void WIFI_UART_Callback(UART_HandleTypeDef *huart);
-void Led_Init();
+void Led_Init(void);
+void Handle_SaltMode_Transition(void);
 void Read_SystemStatus(void);
 void Read_Speed(void);
 void Read_HaslerSpeed(void);
@@ -324,7 +325,6 @@ void Read_SystemStatus(void){
     Read_CurrentZone();
     Read_GPSStatus();
     Read_SISStatus();
-    Read_ActivationSwitchState();	
     Read_LocalCommand();
 }
 
@@ -407,17 +407,47 @@ void Read_SISStatus(void){
 	}
 }
 
-void Read_ActivationSwitchState(void){
-    Read_MALSwitchState();
-	Read_MATSwitchState();
+void Handle_SaltMode_Transition(void){
 
-	if (MAT_switch_state_1 && MAT_switch_state_2){
+  Read_ActivationSwitchState();
+
+  if (MAT_switch_state_1 && MAT_switch_state_2){
+    // Here I can do all transtion actions
+    if(salt_mode == MODO_NORMAL){
+      // Do some exit actions
+      // Do some entry actions
+    } else if (salt_mode == MODO_LIMITADO){
+      // Do some exit actions
+      // Do some entry actions
+    }
 		salt_mode = MODO_TOTAL;
 	} else if (MAL_switch_state_1 && MAL_switch_state_2){
+    // Here I can do all transtion actions
+
+    if(salt_mode == MODO_NORMAL){
+      // Do some exit actions
+      // Do some entry actions
+    } else if (salt_mode == MODO_TOTAL){
+      // Do some exit actions
+      // Do some entry actions
+    }
 		salt_mode = MODO_LIMITADO;
 	}else {
-		salt_mode = MODO_NORMAL;
+    // Here I can do all transtion actions
+    if(salt_mode == MODO_LIMITADO){
+      // Do some exit actions
+      // Do some entry actions
+    } else if (salt_mode == MODO_TOTAL){
+      // Do some exit actions
+      // Do some entry actions
+    }
+		salt_mode = MODO_NORMAL;  
 	}
+}
+
+void Read_ActivationSwitchState(void){
+  Read_MALSwitchState();
+	Read_MATSwitchState();
 }
 
 void Read_MALSwitchState(void){
@@ -725,6 +755,10 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+
+    Handle_SaltMode_Transition();
+
 
 	if (salt_mode == MODO_NORMAL){
     // TO BE IMPLEMENTED
