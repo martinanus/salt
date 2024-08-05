@@ -208,6 +208,8 @@ void Save_LocalLogs(void);
 void Transmit_RemoteEvents(void);
 void Activate_Buzzer(void);
 void Deactivate_Buzzer(void);
+void Activate_SISBypass(void);
+void Deactivate_SISBypass(void);
 
 
 
@@ -412,34 +414,37 @@ void Handle_SaltMode_Transition(void){
   Read_ActivationSwitchState();
 
   if (MAT_switch_state_1 && MAT_switch_state_2){
-    // Here I can do all transtion actions
+    // TO BE IMPLEMENTED
     if(salt_mode == MODO_NORMAL){
-      // Do some exit actions
-      // Do some entry actions
+      Activate_Buzzer();
+      Activate_SISBypass();
     } else if (salt_mode == MODO_LIMITADO){
-      // Do some exit actions
-      // Do some entry actions
+      // Release_CriticalSignals();
     }
 		salt_mode = MODO_TOTAL;
-	} else if (MAL_switch_state_1 && MAL_switch_state_2){
-    // Here I can do all transtion actions
 
+	} else if (MAL_switch_state_1 && MAL_switch_state_2){
+    // TO BE IMPLEMENTED
     if(salt_mode == MODO_NORMAL){
-      // Do some exit actions
-      // Do some entry actions
+      Activate_Buzzer();
+      Activate_SISBypass();
+      // Control_CriticalSignals();
     } else if (salt_mode == MODO_TOTAL){
-      // Do some exit actions
-      // Do some entry actions
+      // Control_CriticalSignals();
     }
 		salt_mode = MODO_LIMITADO;
-	}else {
-    // Here I can do all transtion actions
+
+	} else {
+    // TO BE IMPLEMENTED
     if(salt_mode == MODO_LIMITADO){
-      // Do some exit actions
-      // Do some entry actions
+      Deactivate_Buzzer();
+      Deactivate_SISBypass();
+      // Release_CriticalSignals();
+
     } else if (salt_mode == MODO_TOTAL){
-      // Do some exit actions
-      // Do some entry actions
+      Deactivate_Buzzer();
+      Deactivate_SISBypass();
+      // Release_CriticalSignals();
     }
 		salt_mode = MODO_NORMAL;  
 	}
@@ -470,6 +475,8 @@ void Read_RemoteCommand(void){
 		  sprintf(remote_command_buffer, WIFIline);
 		  WIFInew_line = 0;
 	}else {
+    // TO BE IMPLEMENTED
+    // Apply some delay for valid command
 		remote_command_active = COMMAND_INACTIVE;
 		sprintf(remote_command_buffer, "NO COMM");
 	}
@@ -766,6 +773,57 @@ void Deactivate_Buzzer(void){
   HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, BUZZER_OFF);
 }
 
+void Activate_SISBypass(void){
+  if (SIS_state[0].CT_state == RELAY_OPEN){
+    HAL_GPIO_WritePin(SIS_1_CT_BP_C_GPIO_Port, SIS_1_CT_BP_C_Pin, RELAY_CLOSED);
+  }
+  if (SIS_state[0].FE_state == RELAY_OPEN){
+    HAL_GPIO_WritePin(SIS_1_FE_BP_C_GPIO_Port, SIS_1_FE_BP_C_Pin, RELAY_CLOSED);
+  }
+
+  if (SIS_state[1].CT_state == RELAY_OPEN){
+    HAL_GPIO_WritePin(SIS_2_CT_BP_C_GPIO_Port, SIS_2_CT_BP_C_Pin, RELAY_CLOSED);
+  }
+  if (SIS_state[1].FE_state == RELAY_OPEN){
+    HAL_GPIO_WritePin(SIS_2_FE_BP_C_GPIO_Port, SIS_2_FE_BP_C_Pin, RELAY_CLOSED);
+  }
+
+  if (SIS_state[2].CT_state == RELAY_OPEN){
+    HAL_GPIO_WritePin(SIS_3_CT_BP_C_GPIO_Port, SIS_3_CT_BP_C_Pin, RELAY_CLOSED);
+  }
+  if (SIS_state[2].FE_state == RELAY_OPEN){
+    HAL_GPIO_WritePin(SIS_3_FE_BP_C_GPIO_Port, SIS_3_FE_BP_C_Pin, RELAY_CLOSED);
+  }
+
+  if (SIS_state[3].CT_state == RELAY_OPEN){
+    HAL_GPIO_WritePin(SIS_4_CT_BP_C_GPIO_Port, SIS_4_CT_BP_C_Pin, RELAY_CLOSED);
+  }
+  if (SIS_state[3].FE_state == RELAY_OPEN){
+    HAL_GPIO_WritePin(SIS_4_FE_BP_C_GPIO_Port, SIS_4_FE_BP_C_Pin, RELAY_CLOSED);
+  }
+
+  if (SIS_state[4].CT_state == RELAY_OPEN){
+    HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_CLOSED);
+  }
+  if (SIS_state[5].FE_state == RELAY_OPEN){
+    HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_CLOSED);
+  }
+
+}
+
+void Deactivate_SISBypass(void){  
+  HAL_GPIO_WritePin(SIS_1_CT_BP_C_GPIO_Port, SIS_1_CT_BP_C_Pin, RELAY_OPEN);
+  HAL_GPIO_WritePin(SIS_1_FE_BP_C_GPIO_Port, SIS_1_FE_BP_C_Pin, RELAY_OPEN);
+  HAL_GPIO_WritePin(SIS_2_CT_BP_C_GPIO_Port, SIS_2_CT_BP_C_Pin, RELAY_OPEN);
+  HAL_GPIO_WritePin(SIS_2_FE_BP_C_GPIO_Port, SIS_2_FE_BP_C_Pin, RELAY_OPEN);
+  HAL_GPIO_WritePin(SIS_3_CT_BP_C_GPIO_Port, SIS_3_CT_BP_C_Pin, RELAY_OPEN);
+  HAL_GPIO_WritePin(SIS_3_FE_BP_C_GPIO_Port, SIS_3_FE_BP_C_Pin, RELAY_OPEN);
+  HAL_GPIO_WritePin(SIS_4_CT_BP_C_GPIO_Port, SIS_4_CT_BP_C_Pin, RELAY_OPEN);
+  HAL_GPIO_WritePin(SIS_4_FE_BP_C_GPIO_Port, SIS_4_FE_BP_C_Pin, RELAY_OPEN);
+  HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_OPEN);
+  HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_OPEN);    
+}
+
 
 /* USER CODE END 0 */
 
@@ -851,26 +909,14 @@ int main(void)
     Handle_SaltMode_Transition();
 
 
-	if (salt_mode == MODO_NORMAL){
-    // TO BE IMPLEMENTED
-		// Transaction btw mode should be configured
-		// Deactivate_Buzzer();
-    // Deactivate_SISBypass();
-    // Deactivate_MQTTCommands();
-    // Release_CriticalSignals();
-
-
+	if (salt_mode == MODO_NORMAL){    
 		Read_SystemStatus();
 		Display_SystemStatus();
 		Activate_ZoneRelay();
 		Transmit_RemoteEvents();
 		Save_LocalLogs();
 	} else if (salt_mode == MODO_LIMITADO){
-		// TO BE IMPLEMENTED
-		// Transaction btw mode should be configured
-		// Activate_Buzzer();
-    // Activate_SISBypass();
-    
+		    
     Read_RemoteCommand(); 
     // Display_ActiveMQTTCommands();
     // Control_CriticalSignals();
@@ -878,17 +924,7 @@ int main(void)
     // Read_ChoppProfileSelector();
     // Display_ActiveChoppProfile();
     
-
-		;
-	} else if (salt_mode == MODO_TOTAL){
-		// TO BE IMPLEMENTED
-		// Transaction btw mode should be configured
-		// Activate_Buzzer();
-    // Activate_SISBypass();
-    // Activate_MQTTCommands();
-    // Release_CriticalSignals();
-
-		;
+	} else if (salt_mode == MODO_TOTAL){				
 	}
 
 	HAL_Delay(1000);
