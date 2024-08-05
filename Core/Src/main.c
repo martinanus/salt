@@ -137,7 +137,7 @@ led_state_t CT_led;
 led_state_t FE_led;
 led_state_t chop_profile_leds[5];
 
-buzzer_state_t buzzer_state;
+buzzer_state_t buzzer_state = BUZZER_OFF;
 
 uint8_t digit4_reg_value;
 uint8_t digit5_reg_value;
@@ -453,18 +453,14 @@ void Read_ActivationSwitchState(void){
 void Read_MALSwitchState(void){
 
 	MAL_switch_state_1 = HAL_GPIO_ReadPin(ON_SW_MAL_1_GPIO_Port, ON_SW_MAL_1_Pin );
-	// MAL_switch_state_1 = SWITCH_ON;
 
 	MAL_switch_state_2 = HAL_GPIO_ReadPin(ON_SW_MAL_2_GPIO_Port, ON_SW_MAL_2_Pin );
-    //MAL_switch_state_2 = SWITCH_ON;
 }
 
 void Read_MATSwitchState(void){
 	MAT_switch_state_1 = HAL_GPIO_ReadPin(ON_SW_MAT_1_GPIO_Port, ON_SW_MAT_1_Pin );
-	// MAT_switch_state_1 = SWITCH_ON;
 
 	MAT_switch_state_2 = HAL_GPIO_ReadPin(ON_SW_MAT_2_GPIO_Port, ON_SW_MAT_2_Pin );
-	//MAT_switch_state_2 = SWITCH_ON;
 }
 
 void Read_RemoteCommand(void){
@@ -528,6 +524,101 @@ void Build_SpeedDisplay(void){
 }
 
 void Build_LedIndicators(){
+  if (salt_mode == MODO_NORMAL) {
+      mode_MAL_led = LED_G;
+      mode_MAT_led = LED_ALL_OFF;
+
+      for (uint8_t i = 0; i < 5; i++){
+        chop_profile_leds[i] = LED_OFF;
+      }
+
+      active_command_led = LED_ALL_OFF;
+
+      if (gps_status == STATUS_OK){
+        gps_led = LED_G;
+      } else {
+        gps_led = LED_R;
+      }
+
+      for (uint8_t i = 0; i < 5; i++){
+        if (SIS_state[i].FE_state == RELAY_OPEN || SIS_state[i].CT_state == RELAY_OPEN){
+          SIS_leds[i] = LED_R;  
+        } else{
+          SIS_leds[i] = LED_G;  
+        }        
+      }      
+                     
+  } else if (salt_mode == MODO_LIMITADO){
+      mode_MAL_led = LED_G;
+      mode_MAT_led = LED_ALL_OFF;
+
+
+      for (uint8_t i = 0; i < 5; i++){
+        if (chop_profile == i){
+          chop_profile_leds[i] = LED_ON;  
+        } else{
+          chop_profile_leds[i] = LED_OFF;
+        }        
+      }      
+
+      if (remote_command_active == COMMAND_ACTIVE){
+        active_command_led = LED_G;
+      } else {
+        active_command_led = LED_ALL_OFF;
+      }
+
+      if (gps_status == STATUS_OK){
+        gps_led = LED_G;
+      } else {
+        gps_led = LED_R;
+      }
+
+      // SIS_leds[i] remains unchanged from normal mode to show SIS failing
+
+      // TO BE IMPLEMENTED
+      CT_led = LED_RG; // GET STATE FROM ACTIVATION OR NOT
+      FE_led = LED_RG; // GET_STATE FROM ACTIVATION OR NOT
+            
+  } else if(salt_mode == MODO_TOTAL){
+
+      mode_MAL_led = LED_ALL_OFF;
+      mode_MAT_led = LED_G;
+
+      for (uint8_t i = 0; i < 5; i++){
+        chop_profile_leds[i] = LED_OFF;
+      }
+
+
+      if (remote_command_active == COMMAND_ACTIVE){
+        active_command_led = LED_G;
+      } else {
+        active_command_led = LED_ALL_OFF;
+      }
+
+      if (gps_status == STATUS_OK){
+        gps_led = LED_G;
+      } else {
+        gps_led = LED_R;
+      }
+
+      // SIS_leds[i] remains unchanged from normal mode to show SIS failing
+  }
+
+   switch (current_zone){
+      case ZONE_1:
+        zone_led = LED_G;
+        break;
+      case ZONE_2:
+        zone_led = LED_RG;
+        break;
+      case ZONE_3:
+        zone_led = LED_R;
+        break;
+      default:
+        zone_led = LED_ALL_OFF;
+        break;
+   }
+
   setDigit4_regValue();
   setDigit5_regValue();
   setDigit6_regValue();
@@ -548,7 +639,7 @@ void setOrClearBit(uint8_t *byteVal, uint8_t bitPos, uint8_t value) {
 
 void setDigit4_regValue(){
     uint8_t byteVal = 0x00;
-
+  
     uint8_t D7_DP = chop_profile_leds[0];               // LED14      - CC_4 - A_DP - CHOP_1
     uint8_t D6_A = extractBit(mode_MAL_led, 1);         // LED2_GREEN - CC_4 - A_A  - MODO LIMITADO
     uint8_t D5_B = extractBit(mode_MAT_led, 1);         // LED3_GREEN - CC_4 - A_B  - MODO TOTAL
