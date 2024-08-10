@@ -85,8 +85,8 @@ typedef struct
 
 typedef enum
 {
-    SWITCH_OFF         = 0,
-	SWITCH_ON          = 1
+    SWITCH_ON         = 0,
+	SWITCH_OFF          = 1
 } switch_state_t;
 
 
