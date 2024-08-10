@@ -210,6 +210,7 @@ void Activate_Buzzer(void);
 void Deactivate_Buzzer(void);
 void Activate_SISBypass(void);
 void Deactivate_SISBypass(void);
+void Reset_GPS_Power(void);
 
 
 
@@ -805,7 +806,7 @@ void Activate_SISBypass(void){
   if (SIS_state[4].CT_state == RELAY_OPEN){
     HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_CLOSED);
   }
-  if (SIS_state[5].FE_state == RELAY_OPEN){
+  if (SIS_state[4].FE_state == RELAY_OPEN){
     HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_CLOSED);
   }
 
@@ -822,6 +823,23 @@ void Deactivate_SISBypass(void){
   HAL_GPIO_WritePin(SIS_4_FE_BP_C_GPIO_Port, SIS_4_FE_BP_C_Pin, RELAY_OPEN);
   HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_OPEN);
   HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_OPEN);    
+}
+
+void Reset_GPS_Power(void){
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPS_PW_ON_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPS_PW_ON_GPIO_Port, &GPIO_InitStruct);
+
+  // TO BE IMPLEMENTED - check if this can be async delay
+  HAL_Delay(300);
+
+  GPIO_InitStruct.Pin = GPS_PW_ON_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPS_PW_ON_GPIO_Port, &GPIO_InitStruct);
 }
 
 
@@ -894,6 +912,7 @@ int main(void)
   Led_Init();
 
   
+
 
   /* USER CODE END 2 */
 
