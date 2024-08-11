@@ -151,12 +151,15 @@ relay_state_t zone_relay;
 char local_log_buffer[MAX_LOG_LENGTH];
 char remote_events_buffer[MAX_LOG_LENGTH];
 
-uint32_t currentMillis;
-uint32_t previousMillis;
 chop_profile_t chop_profile = CHOP_PROFILE_0;
 
 HAL_I2C_StateTypeDef i2c_state;
 HAL_StatusTypeDef result;
+
+char txData7[] = "Hello from UART7";
+char txData8[] = "Hello from UART8";
+char rxData7[16];
+char rxData8[16];
 
 /* USER CODE END PV */
 
@@ -272,6 +275,27 @@ void WIFI_UART_Callback(UART_HandleTypeDef *huart)
 
 }
 
+void clearBuffer(char* buffer, size_t size) {
+  memset(buffer, 0, size);
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  // TO BE IMPLEMENTED - Logic for reading speed from hasler and optical pulses
+  if (huart->Instance == UART7)
+  {
+    printf("Received on UART7: %s\r\n", rxData7);
+    clearBuffer(rxData7, sizeof(rxData7)); // Clear buffer
+    HAL_UART_Receive_IT(&RS485_1_UART_HANDLE, (uint8_t*)rxData7, sizeof(rxData7)); // Restart reception
+  }
+  else if (huart->Instance == UART8)
+  {
+    printf("Received on UART8: %s\r\n", rxData8);
+    clearBuffer(rxData8, sizeof(rxData8)); // Clear buffer
+    HAL_UART_Receive_IT(&RS485_2_UART_HANDLE, (uint8_t*)rxData8, sizeof(rxData8)); // Restart reception
+  }
+}
+
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
     if (hadc->Instance == ADC3)
@@ -282,18 +306,23 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN){
-	if (salt_mode == MODO_LIMITADO){
-		currentMillis = HAL_GetTick();
-			if (GPIO_PIN == CHOP_SEL_Pin && currentMillis - previousMillis > BTN_DEBOUNCE_MS){
-				if (chop_profile == CHOP_PROFILE_4) {
-					chop_profile = CHOP_PROFILE_0;
-				} else {
-					chop_profile++;
-				}
-				printf("Chop profile changed to n %d! \n", chop_profile);
-				previousMillis = currentMillis;
-			}
-	}
+  static uint32_t previousMillis = 0;
+  uint32_t currentMillis;
+
+  if (GPIO_PIN == CHOP_SEL_Pin){
+    if (salt_mode == MODO_LIMITADO){
+      currentMillis = HAL_GetTick();
+      if(currentMillis - previousMillis > BTN_DEBOUNCE_MS){
+        if (chop_profile == CHOP_PROFILE_4) {
+          chop_profile = CHOP_PROFILE_0;
+        } else {
+          chop_profile++;
+        }
+        printf("Chop profile changed to n %d! \n", chop_profile);
+        previousMillis = currentMillis;
+      }
+    }    
+  }
 }
 
 
@@ -485,6 +514,7 @@ void Read_RemoteCommand(void){
 }
 
 void Read_LocalCommand(void){
+  // TO BE IMPLEMENTED - this is get by uart3 ? what are the commands? 
 	local_command_active = COMMAND_ACTIVE;
 	sprintf(local_command_buffer, "myLocCom");
 }
@@ -756,7 +786,7 @@ void Save_LocalLogs(void){
   // What should I log here? 
 	sprintf(local_log_buffer, "this is my local log");
 	//log_event(local_log_file_name, log_timestamp, local_log_buffer);
-	printf("%s: %s wrote in file: %s\r\n", log_timestamp, local_log_buffer, local_log_file_name);
+	//printf("%s: %s wrote in file: %s\r\n", log_timestamp, local_log_buffer, local_log_file_name);
 }
 
 
@@ -968,20 +998,28 @@ int main(void)
   HAL_UART_RegisterCallback(&WIFI_UART_HANDLE, HAL_UART_RX_COMPLETE_CB_ID, WIFI_UART_Callback);
   HAL_UART_Receive_IT(&WIFI_UART_HANDLE, &WIFIcharRead, 1);
 
+  // Start RS_485 communication
+  HAL_GPIO_WritePin(RS485_1_DIR_GPIO_Port , RS485_1_DIR_Pin, 0);
+    HAL_GPIO_WritePin(RS485_2_DIR_GPIO_Port , RS485_2_DIR_Pin, 0);
+  HAL_UART_Receive_IT(&RS485_1_UART_HANDLE, (uint8_t*)rxData7, sizeof(rxData7));
+  HAL_UART_Receive_IT(&RS485_2_UART_HANDLE, (uint8_t*)rxData8, sizeof(rxData8));
+
   // Start first ADC conversion
   HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*) adc_results_dma, adcChannelCount);
 
     
   I2C_Reset(&hi2c1);
   i2c_state = HAL_I2C_GetState(&I2C_HANDLE);
-  printf("i2c_state is %d", i2c_state);
+  printf("i2c_state is %d \n", i2c_state);
   result = LedDriver_Init(&I2C_HANDLE);
-  printf("Led driver initializated");
+  printf("Led driver initializated \n");
 
   Led_Init();
 
   
-
+  
+  
+  
 
   /* USER CODE END 2 */
 
@@ -991,14 +1029,13 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
+
     /* USER CODE BEGIN 3 */
+	  
 
-
+    
     Handle_SaltMode_Transition();
 
-
-
-	 /*
 	if (salt_mode == MODO_NORMAL){    
 		Read_SystemStatus();
 		Display_SystemStatus();
@@ -1016,7 +1053,8 @@ int main(void)
     
 	} else if (salt_mode == MODO_TOTAL){				
 	}
-	*/
+  
+
 
 	HAL_Delay(1000);
 
