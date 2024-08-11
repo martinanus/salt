@@ -131,6 +131,10 @@ int main(void)
   // Start the UART receive in interrupt mode
   HAL_UART_Receive_IT(&huart7, (uint8_t*)rxData7, sizeof(rxData7));
   HAL_UART_Receive_IT(&huart8, (uint8_t*)rxData8, sizeof(rxData8));
+  printf("Starting...\n");
+
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -143,14 +147,29 @@ int main(void)
 
 
 	// Transmit data from UART7
-	HAL_UART_Transmit_IT(&huart7, (uint8_t*)txData7, strlen(txData7));
-	HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
-	HAL_Delay(1000); // Wait for 1 second
+	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 
+	// Change direction
+	HAL_GPIO_WritePin(RS485_1_DIR_GPIO_Port, RS485_1_DIR_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(RS485_2_DIR_GPIO_Port, RS485_2_DIR_Pin, GPIO_PIN_RESET);
+
+	HAL_UART_Transmit_IT(&huart7, (uint8_t*)txData7, strlen(txData7));
+	HAL_Delay(2000); // Wait for 1 second
+	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+
+
+	//--------------------------------
 	// Transmit data from UART8
+	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+
+	// Change direction
+	HAL_GPIO_WritePin(RS485_1_DIR_GPIO_Port, RS485_1_DIR_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(RS485_2_DIR_GPIO_Port, RS485_2_DIR_Pin, GPIO_PIN_SET);
+
 	HAL_UART_Transmit_IT(&huart8, (uint8_t*)txData8, strlen(txData8));
-	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-	HAL_Delay(1000); // Wait for 1 second
+	HAL_Delay(2000); // Wait for 1 second
+	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+
 
 
 
@@ -349,19 +368,33 @@ static void MX_GPIO_Init(void)
 /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOG_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(RS485_2_DIR_GPIO_Port, RS485_2_DIR_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(RS485_1_DIR_GPIO_Port, RS485_1_DIR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LD1_Pin|LD3_Pin|LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(USB_PowerSwitchOn_GPIO_Port, USB_PowerSwitchOn_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : RS485_2_DIR_Pin */
+  GPIO_InitStruct.Pin = RS485_2_DIR_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(RS485_2_DIR_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : USER_Btn_Pin */
   GPIO_InitStruct.Pin = USER_Btn_Pin;
@@ -384,6 +417,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : RS485_1_DIR_Pin */
+  GPIO_InitStruct.Pin = RS485_1_DIR_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(RS485_1_DIR_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LD1_Pin LD3_Pin LD2_Pin */
   GPIO_InitStruct.Pin = LD1_Pin|LD3_Pin|LD2_Pin;
