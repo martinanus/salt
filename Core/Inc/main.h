@@ -70,17 +70,29 @@ typedef enum
 
 typedef enum 
 {
-    RELAY_OPEN    = 0,
-	RELAY_CLOSED  = 1
+    RELAY_NORMAL     = 0,
+	  RELAY_ENERGIZED  = 1
 } relay_state_t;
+
+typedef enum 
+{
+  SIGNAL_OK     = 0,
+	SIGNAL_ERROR  = 1
+} SIS_signal_state_t;
 
 
 typedef struct
 {
-	relay_state_t FE_state;
-	relay_state_t CT_state;
+	SIS_signal_state_t FE_state;
+	SIS_signal_state_t CT_state;
 } SIS_state_t;
 
+typedef enum
+{
+  SIGNAL_UNINTERFERED = 0,
+  SIGNAL_BYPASSED     = 1,
+  SIGNAL_OPEN         = 2
+} critical_signal_state_t;
 
 
 typedef enum

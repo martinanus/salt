@@ -145,8 +145,7 @@ uint8_t digit6_reg_value;
 uint8_t digit7_reg_value;
 
 
-uint8_t digit7Segment[4];
-relay_state_t zone_relay; 
+uint8_t digit7Segment[4]; 
 
 char local_log_buffer[MAX_LOG_LENGTH];
 char remote_events_buffer[MAX_LOG_LENGTH];
@@ -215,6 +214,9 @@ void Activate_SISBypass(void);
 void Deactivate_SISBypass(void);
 void Reset_GPS_Power(void);
 void Test_Relays(void);
+void Control_CriticalSignals(void);
+void Control_CTsignal(void);
+void Control_FEsignal(void);
 
 
 
@@ -428,14 +430,14 @@ void Read_SISStatus(void){
 
 	for (int i=0; i<5;i++){
 		if (adc_results_dma[2*i] > SIS_FAIL_THRESHOLD){
-			SIS_state[i].FE_state = RELAY_OPEN;
+			SIS_state[i].FE_state = SIGNAL_ERROR;
 		} else {
-			SIS_state[i].FE_state = RELAY_CLOSED;
+			SIS_state[i].FE_state = SIGNAL_OK;
 		}
 		if (adc_results_dma[2*i+1] > SIS_FAIL_THRESHOLD){
-			SIS_state[i].CT_state = RELAY_OPEN;
+			SIS_state[i].CT_state = SIGNAL_ERROR;
 		} else {
-			SIS_state[i].CT_state = RELAY_CLOSED;
+			SIS_state[i].CT_state = SIGNAL_OK;
 		}
 	}
 }
@@ -580,7 +582,7 @@ void Build_LedIndicators(){
       }
 
       for (uint8_t i = 0; i < 5; i++){
-        if (SIS_state[i].FE_state == RELAY_OPEN || SIS_state[i].CT_state == RELAY_OPEN){
+        if (SIS_state[i].FE_state == SIGNAL_ERROR || SIS_state[i].CT_state == SIGNAL_ERROR){
           SIS_leds[i] = LED_R;  
         } else{
           SIS_leds[i] = LED_G;  
@@ -776,7 +778,9 @@ void Send_SystemStatus(void){
 
 void Activate_ZoneRelay(void){
     if (current_zone == ZONE_3){
-    	zone_relay = RELAY_CLOSED;
+      HAL_GPIO_WritePin(ZONA_C_GPIO_Port, ZONA_C_Pin, RELAY_ENERGIZED);
+    }else{
+      HAL_GPIO_WritePin(ZONA_C_GPIO_Port, ZONA_C_Pin, RELAY_NORMAL);
     }
 }
 
@@ -806,54 +810,54 @@ void Deactivate_Buzzer(void){
 }
 
 void Activate_SISBypass(void){
-  if (SIS_state[0].CT_state == RELAY_OPEN){
-    HAL_GPIO_WritePin(SIS_1_CT_BP_C_GPIO_Port, SIS_1_CT_BP_C_Pin, RELAY_CLOSED);
+  if (SIS_state[0].CT_state == SIGNAL_ERROR){
+    HAL_GPIO_WritePin(SIS_1_CT_BP_C_GPIO_Port, SIS_1_CT_BP_C_Pin, RELAY_ENERGIZED);
   }
-  if (SIS_state[0].FE_state == RELAY_OPEN){
-    HAL_GPIO_WritePin(SIS_1_FE_BP_C_GPIO_Port, SIS_1_FE_BP_C_Pin, RELAY_CLOSED);
-  }
-
-  if (SIS_state[1].CT_state == RELAY_OPEN){
-    HAL_GPIO_WritePin(SIS_2_CT_BP_C_GPIO_Port, SIS_2_CT_BP_C_Pin, RELAY_CLOSED);
-  }
-  if (SIS_state[1].FE_state == RELAY_OPEN){
-    HAL_GPIO_WritePin(SIS_2_FE_BP_C_GPIO_Port, SIS_2_FE_BP_C_Pin, RELAY_CLOSED);
+  if (SIS_state[0].FE_state == SIGNAL_ERROR){
+    HAL_GPIO_WritePin(SIS_1_FE_BP_C_GPIO_Port, SIS_1_FE_BP_C_Pin, RELAY_ENERGIZED);
   }
 
-  if (SIS_state[2].CT_state == RELAY_OPEN){
-    HAL_GPIO_WritePin(SIS_3_CT_BP_C_GPIO_Port, SIS_3_CT_BP_C_Pin, RELAY_CLOSED);
+  if (SIS_state[1].CT_state == SIGNAL_ERROR){
+    HAL_GPIO_WritePin(SIS_2_CT_BP_C_GPIO_Port, SIS_2_CT_BP_C_Pin, RELAY_ENERGIZED);
   }
-  if (SIS_state[2].FE_state == RELAY_OPEN){
-    HAL_GPIO_WritePin(SIS_3_FE_BP_C_GPIO_Port, SIS_3_FE_BP_C_Pin, RELAY_CLOSED);
-  }
-
-  if (SIS_state[3].CT_state == RELAY_OPEN){
-    HAL_GPIO_WritePin(SIS_4_CT_BP_C_GPIO_Port, SIS_4_CT_BP_C_Pin, RELAY_CLOSED);
-  }
-  if (SIS_state[3].FE_state == RELAY_OPEN){
-    HAL_GPIO_WritePin(SIS_4_FE_BP_C_GPIO_Port, SIS_4_FE_BP_C_Pin, RELAY_CLOSED);
+  if (SIS_state[1].FE_state == SIGNAL_ERROR){
+    HAL_GPIO_WritePin(SIS_2_FE_BP_C_GPIO_Port, SIS_2_FE_BP_C_Pin, RELAY_ENERGIZED);
   }
 
-  if (SIS_state[4].CT_state == RELAY_OPEN){
-    HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_CLOSED);
+  if (SIS_state[2].CT_state == SIGNAL_ERROR){
+    HAL_GPIO_WritePin(SIS_3_CT_BP_C_GPIO_Port, SIS_3_CT_BP_C_Pin, RELAY_ENERGIZED);
   }
-  if (SIS_state[4].FE_state == RELAY_OPEN){
-    HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_CLOSED);
+  if (SIS_state[2].FE_state == SIGNAL_ERROR){
+    HAL_GPIO_WritePin(SIS_3_FE_BP_C_GPIO_Port, SIS_3_FE_BP_C_Pin, RELAY_ENERGIZED);
+  }
+
+  if (SIS_state[3].CT_state == SIGNAL_ERROR){
+    HAL_GPIO_WritePin(SIS_4_CT_BP_C_GPIO_Port, SIS_4_CT_BP_C_Pin, RELAY_ENERGIZED);
+  }
+  if (SIS_state[3].FE_state == SIGNAL_ERROR){
+    HAL_GPIO_WritePin(SIS_4_FE_BP_C_GPIO_Port, SIS_4_FE_BP_C_Pin, RELAY_ENERGIZED);
+  }
+
+  if (SIS_state[4].CT_state == SIGNAL_ERROR){
+    HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_ENERGIZED);
+  }
+  if (SIS_state[4].FE_state == SIGNAL_ERROR){
+    HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_ENERGIZED);
   }
 
 }
 
 void Deactivate_SISBypass(void){  
-  HAL_GPIO_WritePin(SIS_1_CT_BP_C_GPIO_Port, SIS_1_CT_BP_C_Pin, RELAY_OPEN);
-  HAL_GPIO_WritePin(SIS_1_FE_BP_C_GPIO_Port, SIS_1_FE_BP_C_Pin, RELAY_OPEN);
-  HAL_GPIO_WritePin(SIS_2_CT_BP_C_GPIO_Port, SIS_2_CT_BP_C_Pin, RELAY_OPEN);
-  HAL_GPIO_WritePin(SIS_2_FE_BP_C_GPIO_Port, SIS_2_FE_BP_C_Pin, RELAY_OPEN);
-  HAL_GPIO_WritePin(SIS_3_CT_BP_C_GPIO_Port, SIS_3_CT_BP_C_Pin, RELAY_OPEN);
-  HAL_GPIO_WritePin(SIS_3_FE_BP_C_GPIO_Port, SIS_3_FE_BP_C_Pin, RELAY_OPEN);
-  HAL_GPIO_WritePin(SIS_4_CT_BP_C_GPIO_Port, SIS_4_CT_BP_C_Pin, RELAY_OPEN);
-  HAL_GPIO_WritePin(SIS_4_FE_BP_C_GPIO_Port, SIS_4_FE_BP_C_Pin, RELAY_OPEN);
-  HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_OPEN);
-  HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_OPEN);    
+  HAL_GPIO_WritePin(SIS_1_CT_BP_C_GPIO_Port, SIS_1_CT_BP_C_Pin, RELAY_NORMAL);
+  HAL_GPIO_WritePin(SIS_1_FE_BP_C_GPIO_Port, SIS_1_FE_BP_C_Pin, RELAY_NORMAL);
+  HAL_GPIO_WritePin(SIS_2_CT_BP_C_GPIO_Port, SIS_2_CT_BP_C_Pin, RELAY_NORMAL);
+  HAL_GPIO_WritePin(SIS_2_FE_BP_C_GPIO_Port, SIS_2_FE_BP_C_Pin, RELAY_NORMAL);
+  HAL_GPIO_WritePin(SIS_3_CT_BP_C_GPIO_Port, SIS_3_CT_BP_C_Pin, RELAY_NORMAL);
+  HAL_GPIO_WritePin(SIS_3_FE_BP_C_GPIO_Port, SIS_3_FE_BP_C_Pin, RELAY_NORMAL);
+  HAL_GPIO_WritePin(SIS_4_CT_BP_C_GPIO_Port, SIS_4_CT_BP_C_Pin, RELAY_NORMAL);
+  HAL_GPIO_WritePin(SIS_4_FE_BP_C_GPIO_Port, SIS_4_FE_BP_C_Pin, RELAY_NORMAL);
+  HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_NORMAL);
+  HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_NORMAL);    
 }
 
 void Reset_GPS_Power(void){
@@ -875,71 +879,106 @@ void Reset_GPS_Power(void){
 
 void Test_Relays(void){
 
-    HAL_GPIO_WritePin(SIS_1_CT_BP_C_GPIO_Port, SIS_1_CT_BP_C_Pin, RELAY_CLOSED);
-    HAL_GPIO_WritePin(SIS_1_FE_BP_C_GPIO_Port, SIS_1_FE_BP_C_Pin, RELAY_CLOSED);
-    HAL_GPIO_WritePin(SIS_2_CT_BP_C_GPIO_Port, SIS_2_CT_BP_C_Pin, RELAY_CLOSED);
-    HAL_GPIO_WritePin(SIS_2_FE_BP_C_GPIO_Port, SIS_2_FE_BP_C_Pin, RELAY_CLOSED);
-    HAL_GPIO_WritePin(SIS_3_CT_BP_C_GPIO_Port, SIS_3_CT_BP_C_Pin, RELAY_CLOSED);
-    HAL_GPIO_WritePin(SIS_3_FE_BP_C_GPIO_Port, SIS_3_FE_BP_C_Pin, RELAY_CLOSED);
-    HAL_GPIO_WritePin(SIS_4_CT_BP_C_GPIO_Port, SIS_4_CT_BP_C_Pin, RELAY_CLOSED);
-    HAL_GPIO_WritePin(SIS_4_FE_BP_C_GPIO_Port, SIS_4_FE_BP_C_Pin, RELAY_CLOSED);
-    HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_CLOSED);
-    HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_CLOSED);
+    HAL_GPIO_WritePin(SIS_1_CT_BP_C_GPIO_Port, SIS_1_CT_BP_C_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(SIS_1_FE_BP_C_GPIO_Port, SIS_1_FE_BP_C_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(SIS_2_CT_BP_C_GPIO_Port, SIS_2_CT_BP_C_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(SIS_2_FE_BP_C_GPIO_Port, SIS_2_FE_BP_C_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(SIS_3_CT_BP_C_GPIO_Port, SIS_3_CT_BP_C_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(SIS_3_FE_BP_C_GPIO_Port, SIS_3_FE_BP_C_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(SIS_4_CT_BP_C_GPIO_Port, SIS_4_CT_BP_C_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(SIS_4_FE_BP_C_GPIO_Port, SIS_4_FE_BP_C_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_ENERGIZED);
 
     HAL_Delay(2000);
 
-    HAL_GPIO_WritePin(SIS_1_CT_BP_C_GPIO_Port, SIS_1_CT_BP_C_Pin, RELAY_OPEN);
-    HAL_GPIO_WritePin(SIS_1_FE_BP_C_GPIO_Port, SIS_1_FE_BP_C_Pin, RELAY_OPEN);
-    HAL_GPIO_WritePin(SIS_2_CT_BP_C_GPIO_Port, SIS_2_CT_BP_C_Pin, RELAY_OPEN);
-    HAL_GPIO_WritePin(SIS_2_FE_BP_C_GPIO_Port, SIS_2_FE_BP_C_Pin, RELAY_OPEN);
-    HAL_GPIO_WritePin(SIS_3_CT_BP_C_GPIO_Port, SIS_3_CT_BP_C_Pin, RELAY_OPEN);
-    HAL_GPIO_WritePin(SIS_3_FE_BP_C_GPIO_Port, SIS_3_FE_BP_C_Pin, RELAY_OPEN);
-    HAL_GPIO_WritePin(SIS_4_CT_BP_C_GPIO_Port, SIS_4_CT_BP_C_Pin, RELAY_OPEN);
-    HAL_GPIO_WritePin(SIS_4_FE_BP_C_GPIO_Port, SIS_4_FE_BP_C_Pin, RELAY_OPEN);
-    HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_OPEN);
-    HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_OPEN);
+    HAL_GPIO_WritePin(SIS_1_CT_BP_C_GPIO_Port, SIS_1_CT_BP_C_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(SIS_1_FE_BP_C_GPIO_Port, SIS_1_FE_BP_C_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(SIS_2_CT_BP_C_GPIO_Port, SIS_2_CT_BP_C_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(SIS_2_FE_BP_C_GPIO_Port, SIS_2_FE_BP_C_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(SIS_3_CT_BP_C_GPIO_Port, SIS_3_CT_BP_C_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(SIS_3_FE_BP_C_GPIO_Port, SIS_3_FE_BP_C_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(SIS_4_CT_BP_C_GPIO_Port, SIS_4_CT_BP_C_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(SIS_4_FE_BP_C_GPIO_Port, SIS_4_FE_BP_C_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_NORMAL);
 
 
     HAL_Delay(2000);
 
-    HAL_GPIO_WritePin(REG_1_C_GPIO_Port, REG_1_C_Pin, RELAY_CLOSED);
-    HAL_GPIO_WritePin(REG_2_C_GPIO_Port, REG_2_C_Pin, RELAY_CLOSED);
-    HAL_GPIO_WritePin(REG_3_C_GPIO_Port, REG_3_C_Pin, RELAY_CLOSED);
-    HAL_GPIO_WritePin(REG_4_C_GPIO_Port, REG_4_C_Pin, RELAY_CLOSED);
-    HAL_GPIO_WritePin(ZONA_C_GPIO_Port , ZONA_C_Pin , RELAY_CLOSED);
-
-    HAL_Delay(2000);
-
-
-    HAL_GPIO_WritePin(REG_1_C_GPIO_Port, REG_1_C_Pin, RELAY_OPEN);
-    HAL_GPIO_WritePin(REG_2_C_GPIO_Port, REG_2_C_Pin, RELAY_OPEN);
-    HAL_GPIO_WritePin(REG_3_C_GPIO_Port, REG_3_C_Pin, RELAY_OPEN);
-    HAL_GPIO_WritePin(REG_4_C_GPIO_Port, REG_4_C_Pin, RELAY_OPEN);
-    HAL_GPIO_WritePin(ZONA_C_GPIO_Port , ZONA_C_Pin , RELAY_OPEN);
-
-    HAL_Delay(2000);
-
-    HAL_GPIO_WritePin(CT_C_GPIO_Port    , CT_C_Pin    , RELAY_CLOSED);
-    HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_CLOSED);
-    HAL_GPIO_WritePin(CT_DES_2_GPIO_Port, CT_DES_2_Pin, RELAY_CLOSED);
-
-    HAL_GPIO_WritePin(FE_C_GPIO_Port    , FE_C_Pin    , RELAY_CLOSED);
-    HAL_GPIO_WritePin(FE_DES_1_GPIO_Port, FE_DES_1_Pin, RELAY_CLOSED);
-    HAL_GPIO_WritePin(FE_DES_2_GPIO_Port, FE_DES_2_Pin, RELAY_CLOSED);
+    HAL_GPIO_WritePin(REG_1_C_GPIO_Port, REG_1_C_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(REG_2_C_GPIO_Port, REG_2_C_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(REG_3_C_GPIO_Port, REG_3_C_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(REG_4_C_GPIO_Port, REG_4_C_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(ZONA_C_GPIO_Port , ZONA_C_Pin , RELAY_ENERGIZED);
 
     HAL_Delay(2000);
 
 
-    HAL_GPIO_WritePin(CT_C_GPIO_Port    , CT_C_Pin    , RELAY_OPEN);
-    HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_OPEN);
-    HAL_GPIO_WritePin(CT_DES_2_GPIO_Port, CT_DES_2_Pin, RELAY_OPEN);
+    HAL_GPIO_WritePin(REG_1_C_GPIO_Port, REG_1_C_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(REG_2_C_GPIO_Port, REG_2_C_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(REG_3_C_GPIO_Port, REG_3_C_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(REG_4_C_GPIO_Port, REG_4_C_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(ZONA_C_GPIO_Port , ZONA_C_Pin , RELAY_NORMAL);
 
-    HAL_GPIO_WritePin(FE_C_GPIO_Port    , FE_C_Pin    , RELAY_OPEN);
-    HAL_GPIO_WritePin(FE_DES_1_GPIO_Port, FE_DES_1_Pin, RELAY_OPEN);
-    HAL_GPIO_WritePin(FE_DES_2_GPIO_Port, FE_DES_2_Pin, RELAY_OPEN);
+    HAL_Delay(2000);
+
+    HAL_GPIO_WritePin(CT_C_GPIO_Port    , CT_C_Pin    , RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(CT_DES_2_GPIO_Port, CT_DES_2_Pin, RELAY_ENERGIZED);
+
+    HAL_GPIO_WritePin(FE_C_GPIO_Port    , FE_C_Pin    , RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(FE_DES_1_GPIO_Port, FE_DES_1_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(FE_DES_2_GPIO_Port, FE_DES_2_Pin, RELAY_ENERGIZED);
+
+    HAL_Delay(2000);
+
+
+    HAL_GPIO_WritePin(CT_C_GPIO_Port    , CT_C_Pin    , RELAY_NORMAL);
+    HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(CT_DES_2_GPIO_Port, CT_DES_2_Pin, RELAY_NORMAL);
+
+    HAL_GPIO_WritePin(FE_C_GPIO_Port    , FE_C_Pin    , RELAY_NORMAL);
+    HAL_GPIO_WritePin(FE_DES_1_GPIO_Port, FE_DES_1_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(FE_DES_2_GPIO_Port, FE_DES_2_Pin, RELAY_NORMAL);
 
     HAL_Delay(2000);
   }
+
+critical_signal_state_t CT_signal;
+critical_signal_state_t FE_signal;
+
+void Control_CriticalSignals(void){
+  Control_CTsignal();
+  Control_FEsignal();
+}
+
+void Control_CTsignal(void){
+  if (CT_signal == SIGNAL_OPEN){
+    HAL_GPIO_WritePin(CT_C_GPIO_Port    , CT_C_Pin    , RELAY_NORMAL);
+    HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(CT_DES_2_GPIO_Port, CT_DES_2_Pin, RELAY_NORMAL);
+
+  } else if (CT_signal == SIGNAL_BYPASSED){
+
+  } else {
+    HAL_GPIO_WritePin(CT_C_GPIO_Port    , CT_C_Pin    , RELAY_NORMAL);
+    HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(CT_DES_2_GPIO_Port, CT_DES_2_Pin, RELAY_NORMAL);
+  }
+  
+}
+
+void Control_FEsignal(void){  
+}
+
+void Release_CriticalSignals(void){
+  CT_signal = SIGNAL_UNINTERFERED;
+  Control_CTsignal();
+  FE_signal = SIGNAL_UNINTERFERED;
+  Control_FEsignal();
+}
+
 
 
 /* USER CODE END 0 */
@@ -1039,17 +1078,18 @@ int main(void)
 	if (salt_mode == MODO_NORMAL){    
 		Read_SystemStatus();
 		Display_SystemStatus();
-		Activate_ZoneRelay();
-		Transmit_RemoteEvents();
-		Save_LocalLogs();
+		//Activate_ZoneRelay();
+		//Transmit_RemoteEvents();
+		//Save_LocalLogs();
+    //ExecuteRemoteCommands
+    //ExecuteLocalCommands
 	} else if (salt_mode == MODO_LIMITADO){
-		    
-    Read_RemoteCommand(); 
-    // Display_ActiveMQTTCommands();
+		Read_SystemStatus();
+		Display_SystemStatus();
+    
     // Control_CriticalSignals();
-    // Display_CriticalSignals();
-    // Read_ChoppProfileSelector();
-    // Display_ActiveChoppProfile();
+    //ExecuteRemoteCommands
+    //ExecuteLocalCommands
     
 	} else if (salt_mode == MODO_TOTAL){				
 	}
