@@ -109,6 +109,8 @@ zones_t current_zone;
 status_t gps_status;
 
 SIS_state_t SIS_state[5];
+critical_signal_state_t CT_signal;
+critical_signal_state_t FE_signal;
 
 switch_state_t MAL_switch_state_1 = SWITCH_OFF;
 switch_state_t MAL_switch_state_2 = SWITCH_OFF;
@@ -217,6 +219,7 @@ void Test_Relays(void);
 void Control_CriticalSignals(void);
 void Control_CTsignal(void);
 void Control_FEsignal(void);
+void Release_CriticalSignals(void);
 
 
 
@@ -452,7 +455,7 @@ void Handle_SaltMode_Transition(void){
       Activate_Buzzer();
       Activate_SISBypass();
     } else if (salt_mode == MODO_LIMITADO){
-      // Release_CriticalSignals();
+      Release_CriticalSignals();
     }
 		salt_mode = MODO_TOTAL;
 
@@ -472,12 +475,12 @@ void Handle_SaltMode_Transition(void){
     if(salt_mode == MODO_LIMITADO){
       Deactivate_Buzzer();
       Deactivate_SISBypass();
-      // Release_CriticalSignals();
+      Release_CriticalSignals();
 
     } else if (salt_mode == MODO_TOTAL){
       Deactivate_Buzzer();
       Deactivate_SISBypass();
-      // Release_CriticalSignals();
+      Release_CriticalSignals();
     }
 		salt_mode = MODO_NORMAL;  
 	}
@@ -945,9 +948,6 @@ void Test_Relays(void){
     HAL_Delay(2000);
   }
 
-critical_signal_state_t CT_signal;
-critical_signal_state_t FE_signal;
-
 void Control_CriticalSignals(void){
   Control_CTsignal();
   Control_FEsignal();
@@ -955,21 +955,36 @@ void Control_CriticalSignals(void){
 
 void Control_CTsignal(void){
   if (CT_signal == SIGNAL_OPEN){
+    HAL_GPIO_WritePin(CT_C_GPIO_Port    , CT_C_Pin    , RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(CT_DES_2_GPIO_Port, CT_DES_2_Pin, RELAY_ENERGIZED);
+  } else if (CT_signal == SIGNAL_BYPASSED){ 
+    // This status should not be used if SIS_BYPASS reenables IN signal continuity
+    HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(CT_DES_2_GPIO_Port, CT_DES_2_Pin, RELAY_NORMAL);
     HAL_GPIO_WritePin(CT_C_GPIO_Port    , CT_C_Pin    , RELAY_NORMAL);
+  } else {    
     HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_NORMAL);
     HAL_GPIO_WritePin(CT_DES_2_GPIO_Port, CT_DES_2_Pin, RELAY_NORMAL);
-
-  } else if (CT_signal == SIGNAL_BYPASSED){
-
-  } else {
     HAL_GPIO_WritePin(CT_C_GPIO_Port    , CT_C_Pin    , RELAY_NORMAL);
-    HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_NORMAL);
-    HAL_GPIO_WritePin(CT_DES_2_GPIO_Port, CT_DES_2_Pin, RELAY_NORMAL);
   }
   
 }
 
 void Control_FEsignal(void){  
+  if (FE_signal == SIGNAL_OPEN){
+    HAL_GPIO_WritePin(FE_C_GPIO_Port    , FE_C_Pin    , RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(FE_DES_1_GPIO_Port, FE_DES_1_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(FE_DES_2_GPIO_Port, FE_DES_2_Pin, RELAY_ENERGIZED);
+  } else if (FE_signal == SIGNAL_BYPASSED){
+    HAL_GPIO_WritePin(FE_DES_1_GPIO_Port, FE_DES_1_Pin, RELAY_ENERGIZED);
+    HAL_GPIO_WritePin(FE_DES_2_GPIO_Port, FE_DES_2_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(FE_C_GPIO_Port    , FE_C_Pin    , RELAY_NORMAL);
+  } else {    
+    HAL_GPIO_WritePin(FE_DES_1_GPIO_Port, FE_DES_1_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(FE_DES_2_GPIO_Port, FE_DES_2_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(FE_C_GPIO_Port    , FE_C_Pin    , RELAY_NORMAL);
+  }
 }
 
 void Release_CriticalSignals(void){
@@ -1072,7 +1087,6 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  
 
-    
     Handle_SaltMode_Transition();
 
 	if (salt_mode == MODO_NORMAL){    
@@ -1087,13 +1101,13 @@ int main(void)
 		Read_SystemStatus();
 		Display_SystemStatus();
     
-    // Control_CriticalSignals();
+    Control_CriticalSignals();
     //ExecuteRemoteCommands
     //ExecuteLocalCommands
     
 	} else if (salt_mode == MODO_TOTAL){				
 	}
-  
+
 
 
 	HAL_Delay(1000);
