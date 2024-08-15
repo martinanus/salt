@@ -216,6 +216,8 @@ void Activate_SISBypass(void);
 void Deactivate_SISBypass(void);
 void Reset_GPS_Power(void);
 void Test_Relays(void);
+void Set_CriticalSignals_State(void);
+void Activate_ChopRoutine(void);
 void Control_CriticalSignals(void);
 void Control_CTsignal(void);
 void Control_FEsignal(void);
@@ -388,12 +390,12 @@ void Read_Speed(void){
 
 void Read_HaslerSpeed(void){
     // TO BE IMPLEMENTED
-    hasler_speed = 115.9;
+    hasler_speed = 22.7;
 }
 
 void Read_PulseGeneratorSpeed(void){
     // TO BE IMPLEMENTED
-    pulse_generator_speed = 95.2;
+    pulse_generator_speed = 21.4;
 }
 
 void Read_GPSSpeed(void){
@@ -948,6 +950,129 @@ void Test_Relays(void){
     HAL_Delay(2000);
   }
 
+
+void Set_CriticalSignals_State(void){
+  static uint32_t last_FE_signal_activation_ms = 0;
+  uint32_t currentMillis;  
+
+  // TO BE IMPLEMENTED - these speeds should be configurable
+  uint8_t speed_limit_to_decelerate = 30;   // km/h
+  uint8_t speed_limit_to_accelerate = 25;   // km/h
+  uint8_t speed_limit_to_brake = 36;        // km/h
+  uint8_t time_to_brake_s = 4;              // s --> thold = 30s
+
+  if (salt_mode == MODO_LIMITADO){
+
+    if (speed_source != SPEED_NONE){
+      
+      if (speed > speed_limit_to_decelerate){
+        CT_signal = SIGNAL_OPEN;
+
+      } else if (CT_signal == SIGNAL_OPEN &&
+    		  FE_signal == SIGNAL_UNINTERFERED &&
+			  speed < speed_limit_to_accelerate){
+
+        CT_signal = SIGNAL_UNINTERFERED;
+      }
+            
+      currentMillis = HAL_GetTick();
+      if (FE_signal == SIGNAL_UNINTERFERED && speed > speed_limit_to_brake) {
+
+        FE_signal = SIGNAL_OPEN;
+        last_FE_signal_activation_ms = HAL_GetTick();
+
+      } else if (currentMillis - last_FE_signal_activation_ms > time_to_brake_s*1000 &&
+                speed < SPEED_STOP){
+        FE_signal = SIGNAL_UNINTERFERED;
+      }
+
+    } else {
+      Activate_ChopRoutine();
+    }   
+
+  }else {
+    CT_signal = SIGNAL_UNINTERFERED;
+    FE_signal = SIGNAL_UNINTERFERED;
+  }
+}
+
+
+
+void Activate_ChopRoutine(void){
+  
+  static uint32_t acceleration_start_ms = 0;
+  static uint32_t deceleration_start_ms = 0;
+  static uint8_t  cycles_run = 0;
+  static uint32_t brake_start_ms = 0;
+  static chop_state_t chop_state = CHOP_READY_TO_START;
+
+  uint32_t currentMillis;  
+
+  // TO BE IMPLEMENTED - these times should be configurable
+  uint8_t time_to_accelerate[5] = {3,6,9,12,15};
+  uint8_t time_to_decelerate[5] = {7,14,21,28,35};
+  uint8_t number_of_cycles_before_break[5] = {3,4,5,6,7};
+  uint8_t time_to_brake[5] = {10,20,30,40,50};
+
+
+
+  currentMillis = HAL_GetTick();
+
+  switch (chop_state){
+
+  case CHOP_DEACTIVATED:
+    CT_signal = SIGNAL_UNINTERFERED;
+    FE_signal = SIGNAL_UNINTERFERED;
+    break;
+
+
+  case CHOP_READY_TO_START:
+    CT_signal = SIGNAL_UNINTERFERED;
+    FE_signal = SIGNAL_UNINTERFERED;
+    acceleration_start_ms = HAL_GetTick();
+    chop_state = CHOP_ACCELERATING;
+    break;
+
+  case CHOP_ACCELERATING:
+    
+    if (currentMillis - acceleration_start_ms > time_to_accelerate[chop_profile]*1000){
+      CT_signal = SIGNAL_OPEN;
+      FE_signal = SIGNAL_UNINTERFERED;
+      deceleration_start_ms = HAL_GetTick();
+      chop_state = CHOP_DECELERATING;
+    }
+    break;
+
+  case CHOP_DECELERATING:
+    
+    if (currentMillis - deceleration_start_ms > time_to_decelerate[chop_profile]*1000){
+      cycles_run++;
+
+      if (cycles_run == number_of_cycles_before_break[chop_profile]){
+        cycles_run = 0;
+        CT_signal = SIGNAL_OPEN;
+        FE_signal = SIGNAL_OPEN;
+        brake_start_ms = HAL_GetTick();
+        chop_state = CHOP_BRAKING;
+      } else {
+        chop_state = CHOP_READY_TO_START;
+      }
+      
+    }
+    break;
+
+  case CHOP_BRAKING:
+    if (currentMillis - brake_start_ms > time_to_brake[chop_profile]*1000){
+      chop_state = CHOP_READY_TO_START;
+    }
+    break;
+  
+
+  default:
+    break;
+  }
+}
+
 void Control_CriticalSignals(void){
   Control_CTsignal();
   Control_FEsignal();
@@ -977,6 +1102,7 @@ void Control_FEsignal(void){
     HAL_GPIO_WritePin(FE_DES_1_GPIO_Port, FE_DES_1_Pin, RELAY_ENERGIZED);
     HAL_GPIO_WritePin(FE_DES_2_GPIO_Port, FE_DES_2_Pin, RELAY_ENERGIZED);
   } else if (FE_signal == SIGNAL_BYPASSED){
+    // This status should not be used if SIS_BYPASS reenables IN signal continuity
     HAL_GPIO_WritePin(FE_DES_1_GPIO_Port, FE_DES_1_Pin, RELAY_ENERGIZED);
     HAL_GPIO_WritePin(FE_DES_2_GPIO_Port, FE_DES_2_Pin, RELAY_NORMAL);
     HAL_GPIO_WritePin(FE_C_GPIO_Port    , FE_C_Pin    , RELAY_NORMAL);
@@ -1087,7 +1213,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  
 
-    Handle_SaltMode_Transition();
+  Handle_SaltMode_Transition();
 
 	if (salt_mode == MODO_NORMAL){    
 		Read_SystemStatus();
@@ -1099,8 +1225,8 @@ int main(void)
     //ExecuteLocalCommands
 	} else if (salt_mode == MODO_LIMITADO){
 		Read_SystemStatus();
-		Display_SystemStatus();
-    
+		Display_SystemStatus();		
+    Set_CriticalSignals_State();
     Control_CriticalSignals();
     //ExecuteRemoteCommands
     //ExecuteLocalCommands

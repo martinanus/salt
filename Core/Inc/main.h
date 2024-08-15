@@ -162,6 +162,16 @@ typedef enum {
 	CHOP_PROFILE_3 = 3,
 	CHOP_PROFILE_4 = 4
 }chop_profile_t;
+
+typedef enum
+{
+    CHOP_DEACTIVATED    = 0,
+    CHOP_READY_TO_START = 1,
+    CHOP_ACCELERATING   = 2,      
+    CHOP_DECELERATING   = 3,      
+    CHOP_BRAKING        = 4      
+    
+} chop_state_t;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -359,6 +369,9 @@ void Error_Handler(void);
 #define MAX_LOG_LENGTH 256
 #define MAX_COMMAND_LENGTH 256
 #define BTN_DEBOUNCE_MS 100
+
+#define SPEED_STOP 0.5                // km/h
+
 
 /* USER CODE END Private defines */
 
