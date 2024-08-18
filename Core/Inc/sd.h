@@ -10,6 +10,6 @@
 
 void mount_filesystem(FATFS *fs);
 void list_root_files(void);
-void log_event(const char *filename, const char *time, const char *event);
+void write_in_file(const char *filename, const char *buffer);
 
 #endif /* SRC_SD_H_ */

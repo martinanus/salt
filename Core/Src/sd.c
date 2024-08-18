@@ -46,15 +46,13 @@ void list_root_files(void) {
     }
 }
 
-void log_event(const char *filename, const char *time, const char *event) {
+void write_in_file(const char *filename, const char *buffer) {
     FIL file;      // File object
     FRESULT res;   // FatFS result
-    char buffer[128];
+
     res = f_open(&file, filename, FA_WRITE | FA_OPEN_APPEND);
     if (res == FR_OK) {
         // Create log entry with a timestamp
-
-        snprintf(buffer, sizeof(buffer), "%s: %s\r\n", time, event);
 
         unsigned int bytes_written;
         if (f_write(&file, buffer, strlen(buffer), &bytes_written) == FR_OK ){

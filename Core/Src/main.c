@@ -103,14 +103,25 @@ float hasler_speed;
 float pulse_generator_speed;
 float gps_speed;
 speed_source_t speed_source;
+speed_source_t prev_speed_source;
 
 zones_t current_zone;
+zones_t prev_zone;
+
+relay_state_t zone_relay;
+relay_state_t prev_zone_relay;
 
 status_t gps_status;
+status_t prev_gps_status;
 
 SIS_state_t SIS_state[5];
+SIS_state_t prev_SIS_state[5];
+
 critical_signal_state_t CT_signal;
+critical_signal_state_t prev_CT_signal;
+
 critical_signal_state_t FE_signal;
+critical_signal_state_t prev_FE_signal;
 
 switch_state_t MAL_switch_state_1 = SWITCH_OFF;
 switch_state_t MAL_switch_state_2 = SWITCH_OFF;
@@ -208,8 +219,8 @@ void setDigit6_regValue(void);
 void setDigit7_regValue(void);
 void Send_SystemStatus(void);
 void Activate_ZoneRelay(void);
-void Save_LocalLogs(void);
-void Transmit_RemoteEvents(void);
+void Log_Event(const char* event);
+void Transmit_RemoteEvents(const char* buffer);
 void Activate_Buzzer(void);
 void Deactivate_Buzzer(void);
 void Activate_SISBypass(void);
@@ -326,6 +337,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN){
           chop_profile++;
         }
         printf("Chop profile changed to n %d! \n", chop_profile);
+        sprintf(local_log_buffer, "CHOP_PROFILE_%d", chop_profile);        
+        Log_Event(local_log_buffer);
         previousMillis = currentMillis;
       }
     }    
@@ -373,9 +386,11 @@ void Read_Speed(void){
     Read_PulseGeneratorSpeed();
     Read_GPSSpeed();
 
+    prev_speed_source = speed_source;
+
     if (hasler_speed != -1){
         speed = hasler_speed;
-        speed_source = HASLER;
+        speed_source = HASLER;       
     } else if (pulse_generator_speed != -1){
         speed = pulse_generator_speed;
         speed_source = PULSE_GENERATOR;
@@ -386,6 +401,16 @@ void Read_Speed(void){
         speed = -1;
         speed_source = SPEED_NONE;
     }
+
+    if (speed_source != prev_speed_source){
+      sprintf(local_log_buffer, "SPEED_SOURCE: %d", speed_source);        
+      Log_Event(local_log_buffer);
+    }
+    if (speed_source != SPEED_NONE){
+      sprintf(local_log_buffer, "SPEED: %f", speed);        
+      Log_Event(local_log_buffer);
+    }
+    
 }
 
 void Read_HaslerSpeed(void){
@@ -417,34 +442,64 @@ void Read_GPSSpeed(void){
 }
 
 void Read_CurrentZone(void){
+  prev_zone = current_zone;
+
 	// TO BE IMPLEMENTED
 	// using gprms.latitude  gprms.longitude to calculate distance from origin point
 	current_zone = ZONE_1;
+
+  if (current_zone != prev_zone){
+    sprintf(local_log_buffer, "ZONE: %d", current_zone);
+    Log_Event(local_log_buffer);
+  }
+  
 }
 
 void Read_GPSStatus(void){  
+  prev_gps_status = gps_status;
+  
   if (gprms.status == 'A' ){
-    gps_status = STATUS_OK;
+    gps_status = STATUS_OK;        
   }  else {
     gps_status = STATUS_ERROR;
+  }	
+
+  if (gps_status != prev_gps_status){
+    sprintf(local_log_buffer, "GPS_STATUS: %d ", gps_status);        
+    Log_Event(local_log_buffer);
   }
-	
 }
 
 void Read_SISStatus(void){
 
 	for (int i=0; i<5;i++){
+
+    prev_SIS_state[i].FE_state = SIS_state[i].FE_state;
+    prev_SIS_state[i].CT_state = SIS_state[i].CT_state;
+
 		if (adc_results_dma[2*i] > SIS_FAIL_THRESHOLD){
 			SIS_state[i].FE_state = SIGNAL_ERROR;
 		} else {
 			SIS_state[i].FE_state = SIGNAL_OK;
 		}
+    
 		if (adc_results_dma[2*i+1] > SIS_FAIL_THRESHOLD){
 			SIS_state[i].CT_state = SIGNAL_ERROR;
 		} else {
 			SIS_state[i].CT_state = SIGNAL_OK;
 		}
 	}
+
+  for (int i=0; i<5;i++){        
+    if (SIS_state[i].FE_state != prev_SIS_state[i].FE_state ){
+      sprintf(local_log_buffer, "SIS_%d_FE_state: %d ", i, SIS_state[i].FE_state);        
+      Log_Event(local_log_buffer);
+    }
+    if (SIS_state[i].CT_state != prev_SIS_state[i].CT_state ){
+      sprintf(local_log_buffer, "SIS_%d_CT_state: %d ", i, SIS_state[i].CT_state);        
+      Log_Event(local_log_buffer);
+    }
+  }
 }
 
 void Handle_SaltMode_Transition(void){
@@ -456,9 +511,12 @@ void Handle_SaltMode_Transition(void){
     if(salt_mode == MODO_NORMAL){
       Activate_Buzzer();
       Activate_SISBypass();
+      Log_Event("MODO_NORMAL --> MODO_TOTAL");
     } else if (salt_mode == MODO_LIMITADO){
       Release_CriticalSignals();
       HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_NORMAL);
+
+      Log_Event("MODO_LIMITADO --> MODO_TOTAL");
     }
 		salt_mode = MODO_TOTAL;
 
@@ -469,9 +527,13 @@ void Handle_SaltMode_Transition(void){
       Activate_SISBypass();
       // Control_CriticalSignals();
       HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_ENERGIZED);
+
+      Log_Event("MODO_NORMAL --> MODO_LIMITADO");
     } else if (salt_mode == MODO_TOTAL){
       // Control_CriticalSignals();
       HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_ENERGIZED);
+
+      Log_Event("MODO_TOTAL --> MODO_LIMITADO");
     }
 		salt_mode = MODO_LIMITADO;
 
@@ -481,11 +543,15 @@ void Handle_SaltMode_Transition(void){
       Deactivate_Buzzer();
       Deactivate_SISBypass();
       Release_CriticalSignals();
+
       HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_NORMAL);
+      Log_Event("MODO_LIMITADO --> MODO_NORMAL");
     } else if (salt_mode == MODO_TOTAL){
       Deactivate_Buzzer();
       Deactivate_SISBypass();
+
       Release_CriticalSignals();
+      Log_Event("MODO_TOTAL --> MODO_NORMAL");
     }
 		salt_mode = MODO_NORMAL;  
 	}
@@ -624,9 +690,17 @@ void Build_LedIndicators(){
 
       // SIS_leds[i] remains unchanged from normal mode to show SIS failing
 
-      // TO BE IMPLEMENTED
-      CT_led = LED_RG; // GET STATE FROM ACTIVATION OR NOT
-      FE_led = LED_RG; // GET_STATE FROM ACTIVATION OR NOT
+      if (CT_signal == SIGNAL_OPEN){
+        CT_led = LED_ON;
+      } else {
+        CT_led = LED_OFF;
+      }
+
+      if (FE_signal == SIGNAL_OPEN){
+        FE_led = LED_ON;
+      } else {
+        FE_led = LED_OFF;
+      }          
             
   } else if(salt_mode == MODO_TOTAL){
 
@@ -784,29 +858,37 @@ void Send_SystemStatus(void){
 }
 
 
-void Activate_ZoneRelay(void){
+void Activate_ZoneRelay(void){  
+
+    prev_zone_relay = zone_relay;
+    
     if (current_zone == ZONE_3){
-      HAL_GPIO_WritePin(ZONA_C_GPIO_Port, ZONA_C_Pin, RELAY_ENERGIZED);
+      zone_relay = RELAY_ENERGIZED;
+      HAL_GPIO_WritePin(ZONA_C_GPIO_Port, ZONA_C_Pin, RELAY_ENERGIZED);      
     }else{
-      HAL_GPIO_WritePin(ZONA_C_GPIO_Port, ZONA_C_Pin, RELAY_NORMAL);
+      zone_relay = RELAY_NORMAL;
+      HAL_GPIO_WritePin(ZONA_C_GPIO_Port, ZONA_C_Pin, RELAY_NORMAL);      
+    }
+
+    if (zone_relay != prev_zone_relay ){
+      sprintf(local_log_buffer, "ZONE_RELAY: %d", zone_relay);
+      Log_Event(local_log_buffer);
     }
 }
 
+void Log_Event(const char* event){
+  char  buffer[MAX_LOG_LENGTH] ;
+  snprintf(buffer, sizeof(buffer), "%s: %s\r\n", log_timestamp, event);
 
-void Save_LocalLogs(void){
-  // TO BE IMPLEMENTED
-  // What should I log here? 
-	sprintf(local_log_buffer, "this is my local log");
-	//log_event(local_log_file_name, log_timestamp, local_log_buffer);
-	//printf("%s: %s wrote in file: %s\r\n", log_timestamp, local_log_buffer, local_log_file_name);
+  // TODO - uncomment this
+	// write_in_file(local_log_file_name, buffer);
+  // Transmit_RemoteEvents(buffer);
+  printf(buffer);
 }
 
 
-void Transmit_RemoteEvents(void){
-  // TO BE IMPLEMENTED
-  // What should I send here? 
-	sprintf(remote_events_buffer, "This is my event\n");
-	HAL_UART_Transmit(&WIFI_UART_HANDLE, (uint8_t*)remote_events_buffer, strlen(remote_events_buffer), HAL_MAX_DELAY);
+void Transmit_RemoteEvents(const char* buffer){
+	HAL_UART_Transmit(&WIFI_UART_HANDLE, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 }
 
 void Activate_Buzzer(void){
@@ -963,6 +1045,9 @@ void Set_CriticalSignals_State(void){
   uint8_t speed_limit_to_accelerate = 25;   // km/h
   uint8_t speed_limit_to_brake = 36;        // km/h
   uint8_t time_to_brake_s = 4;              // s --> thold = 30s
+  
+  prev_CT_signal = CT_signal;
+  prev_FE_signal = FE_signal;
 
   if (salt_mode == MODO_LIMITADO){
 
@@ -1093,12 +1178,19 @@ void Control_CTsignal(void){
     HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_ENERGIZED);
     HAL_GPIO_WritePin(CT_DES_2_GPIO_Port, CT_DES_2_Pin, RELAY_NORMAL);
     HAL_GPIO_WritePin(CT_C_GPIO_Port    , CT_C_Pin    , RELAY_NORMAL);
+
+    HAL_GPIO_WritePin(REG_CT_C_GPIO_Port, REG_CT_C_Pin, RELAY_NORMAL);
   } else {    
     HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_NORMAL);
     HAL_GPIO_WritePin(CT_DES_2_GPIO_Port, CT_DES_2_Pin, RELAY_NORMAL);
     HAL_GPIO_WritePin(CT_C_GPIO_Port    , CT_C_Pin    , RELAY_NORMAL);
 
-    HAL_GPIO_WritePin(REG_CT_C_GPIO_Port, REG_CT_C_Pin, RELAY_NORMAL);
+    HAL_GPIO_WritePin(REG_CT_C_GPIO_Port, REG_CT_C_Pin, RELAY_NORMAL);    
+  }
+
+  if (CT_signal != prev_CT_signal){
+    sprintf(local_log_buffer, "CT_SIGNAL_STATE: %d", CT_signal);        
+    Log_Event(local_log_buffer);
   }
   
 }
@@ -1115,12 +1207,20 @@ void Control_FEsignal(void){
     HAL_GPIO_WritePin(FE_DES_1_GPIO_Port, FE_DES_1_Pin, RELAY_ENERGIZED);
     HAL_GPIO_WritePin(FE_DES_2_GPIO_Port, FE_DES_2_Pin, RELAY_NORMAL);
     HAL_GPIO_WritePin(FE_C_GPIO_Port    , FE_C_Pin    , RELAY_NORMAL);
+
+    HAL_GPIO_WritePin(REG_FE_C_GPIO_Port, REG_FE_C_Pin, RELAY_NORMAL);
   } else {    
     HAL_GPIO_WritePin(FE_DES_1_GPIO_Port, FE_DES_1_Pin, RELAY_NORMAL);
     HAL_GPIO_WritePin(FE_DES_2_GPIO_Port, FE_DES_2_Pin, RELAY_NORMAL);
     HAL_GPIO_WritePin(FE_C_GPIO_Port    , FE_C_Pin    , RELAY_NORMAL);
 
     HAL_GPIO_WritePin(REG_FE_C_GPIO_Port, REG_FE_C_Pin, RELAY_NORMAL);
+  }
+
+  
+  if (FE_signal != prev_FE_signal){
+    sprintf(local_log_buffer, "FE_SIGNAL_STATE: %d", FE_signal);        
+    Log_Event(local_log_buffer);
   }
 }
 
@@ -1181,8 +1281,9 @@ int main(void)
   HAL_GPIO_WritePin(REG_POWER_OK_C_GPIO_Port, REG_POWER_OK_C_Pin, RELAY_ENERGIZED);
 
   mount_filesystem(&fs);
-  //log_event(local_log_file_name, log_timestamp, "SD started OK");
-  printf("%s: %s wrote in file: %s\r\n", log_timestamp, "SD started OK", local_log_file_name);
+  Log_Event("SD started OK");
+  //printf("%s: %s wrote in file: %s\r\n", log_timestamp, "SD started OK", local_log_file_name);
+  Log_Event("POWER_OK");
 
   // Start GPS Callback
   HAL_UART_RegisterCallback(&GPS_UART_HANDLE, HAL_UART_RX_COMPLETE_CB_ID, GPS_UART_Callback);
@@ -1233,8 +1334,6 @@ int main(void)
 		Read_SystemStatus();
 		Display_SystemStatus();
 		//Activate_ZoneRelay();
-		//Transmit_RemoteEvents();
-		//Save_LocalLogs();
     //ExecuteRemoteCommands
     //ExecuteLocalCommands
 	} else if (salt_mode == MODO_LIMITADO){
