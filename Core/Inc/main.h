@@ -373,6 +373,16 @@ void Error_Handler(void);
 #define SPEED_STOP 0.5                // km/h
 
 
+#define REG_MODO_LIMITADO_C_Pin REG_1_C_Pin 
+#define REG_MODO_LIMITADO_C_GPIO_Port  REG_1_C_GPIO_Port 
+#define REG_POWER_OK_C_Pin REG_2_C_Pin 
+#define REG_POWER_OK_C_GPIO_Port REG_2_C_GPIO_Port 
+#define REG_FE_C_Pin REG_3_C_Pin 
+#define REG_FE_C_GPIO_Port REG_3_C_GPIO_Port 
+#define REG_CT_C_Pin REG_4_C_Pin 
+#define REG_CT_C_GPIO_Port REG_4_C_GPIO_Port 
+
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

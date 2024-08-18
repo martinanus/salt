@@ -458,6 +458,7 @@ void Handle_SaltMode_Transition(void){
       Activate_SISBypass();
     } else if (salt_mode == MODO_LIMITADO){
       Release_CriticalSignals();
+      HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_NORMAL);
     }
 		salt_mode = MODO_TOTAL;
 
@@ -467,8 +468,10 @@ void Handle_SaltMode_Transition(void){
       Activate_Buzzer();
       Activate_SISBypass();
       // Control_CriticalSignals();
+      HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_ENERGIZED);
     } else if (salt_mode == MODO_TOTAL){
       // Control_CriticalSignals();
+      HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_ENERGIZED);
     }
 		salt_mode = MODO_LIMITADO;
 
@@ -478,7 +481,7 @@ void Handle_SaltMode_Transition(void){
       Deactivate_Buzzer();
       Deactivate_SISBypass();
       Release_CriticalSignals();
-
+      HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_NORMAL);
     } else if (salt_mode == MODO_TOTAL){
       Deactivate_Buzzer();
       Deactivate_SISBypass();
@@ -1083,6 +1086,8 @@ void Control_CTsignal(void){
     HAL_GPIO_WritePin(CT_C_GPIO_Port    , CT_C_Pin    , RELAY_ENERGIZED);
     HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_ENERGIZED);
     HAL_GPIO_WritePin(CT_DES_2_GPIO_Port, CT_DES_2_Pin, RELAY_ENERGIZED);
+
+    HAL_GPIO_WritePin(REG_CT_C_GPIO_Port, REG_CT_C_Pin, RELAY_ENERGIZED);
   } else if (CT_signal == SIGNAL_BYPASSED){ 
     // This status should not be used if SIS_BYPASS reenables IN signal continuity
     HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_ENERGIZED);
@@ -1092,6 +1097,8 @@ void Control_CTsignal(void){
     HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_NORMAL);
     HAL_GPIO_WritePin(CT_DES_2_GPIO_Port, CT_DES_2_Pin, RELAY_NORMAL);
     HAL_GPIO_WritePin(CT_C_GPIO_Port    , CT_C_Pin    , RELAY_NORMAL);
+
+    HAL_GPIO_WritePin(REG_CT_C_GPIO_Port, REG_CT_C_Pin, RELAY_NORMAL);
   }
   
 }
@@ -1101,6 +1108,8 @@ void Control_FEsignal(void){
     HAL_GPIO_WritePin(FE_C_GPIO_Port    , FE_C_Pin    , RELAY_ENERGIZED);
     HAL_GPIO_WritePin(FE_DES_1_GPIO_Port, FE_DES_1_Pin, RELAY_ENERGIZED);
     HAL_GPIO_WritePin(FE_DES_2_GPIO_Port, FE_DES_2_Pin, RELAY_ENERGIZED);
+
+    HAL_GPIO_WritePin(REG_FE_C_GPIO_Port, REG_FE_C_Pin, RELAY_ENERGIZED);
   } else if (FE_signal == SIGNAL_BYPASSED){
     // This status should not be used if SIS_BYPASS reenables IN signal continuity
     HAL_GPIO_WritePin(FE_DES_1_GPIO_Port, FE_DES_1_Pin, RELAY_ENERGIZED);
@@ -1110,6 +1119,8 @@ void Control_FEsignal(void){
     HAL_GPIO_WritePin(FE_DES_1_GPIO_Port, FE_DES_1_Pin, RELAY_NORMAL);
     HAL_GPIO_WritePin(FE_DES_2_GPIO_Port, FE_DES_2_Pin, RELAY_NORMAL);
     HAL_GPIO_WritePin(FE_C_GPIO_Port    , FE_C_Pin    , RELAY_NORMAL);
+
+    HAL_GPIO_WritePin(REG_FE_C_GPIO_Port, REG_FE_C_Pin, RELAY_NORMAL);
   }
 }
 
@@ -1165,6 +1176,9 @@ int main(void)
   MX_USB_OTG_FS_USB_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
+
+  // Set power OK 
+  HAL_GPIO_WritePin(REG_POWER_OK_C_GPIO_Port, REG_POWER_OK_C_Pin, RELAY_ENERGIZED);
 
   mount_filesystem(&fs);
   //log_event(local_log_file_name, log_timestamp, "SD started OK");
