@@ -360,6 +360,8 @@ void Error_Handler(void);
 #define ADC_HANDLE hadc3
 #define I2C_HANDLE hi2c1
 #define SPI_HANDLE hspi4
+#define RTC_HANDLE hrtc
+
 #define SD_SPI_HANDLE hspi4
 #define SD_CS_GPIO_Port GPIOE
 #define SD_CS_Pin GPIO_PIN_11

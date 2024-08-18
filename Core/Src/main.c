@@ -219,6 +219,7 @@ void setDigit6_regValue(void);
 void setDigit7_regValue(void);
 void Send_SystemStatus(void);
 void Activate_ZoneRelay(void);
+void Init_RTCDateTime(void);
 void Log_Event(const char* event);
 void Transmit_RemoteEvents(const char* buffer);
 void Activate_Buzzer(void);
@@ -407,7 +408,7 @@ void Read_Speed(void){
       Log_Event(local_log_buffer);
     }
     if (speed_source != SPEED_NONE){
-      sprintf(local_log_buffer, "SPEED: %f", speed);        
+      sprintf(local_log_buffer, "SPEED: %.2f", speed);        
       Log_Event(local_log_buffer);
     }
     
@@ -492,11 +493,11 @@ void Read_SISStatus(void){
 
   for (int i=0; i<5;i++){        
     if (SIS_state[i].FE_state != prev_SIS_state[i].FE_state ){
-      sprintf(local_log_buffer, "SIS_%d_FE_state: %d ", i, SIS_state[i].FE_state);        
+      sprintf(local_log_buffer, "SIS_%d_FE_state: %d ", i+1, SIS_state[i].FE_state);        
       Log_Event(local_log_buffer);
     }
     if (SIS_state[i].CT_state != prev_SIS_state[i].CT_state ){
-      sprintf(local_log_buffer, "SIS_%d_CT_state: %d ", i, SIS_state[i].CT_state);        
+      sprintf(local_log_buffer, "SIS_%d_CT_state: %d ", i+1, SIS_state[i].CT_state);        
       Log_Event(local_log_buffer);
     }
   }
@@ -876,9 +877,48 @@ void Activate_ZoneRelay(void){
     }
 }
 
+void Init_RTCDateTime(void)
+{
+
+  // TO BE IMPLEMENTED - Get date from GPS or Wifi modules
+
+  RTC_TimeTypeDef sTime = {0};
+  RTC_DateTypeDef sDate = {0};
+
+  sTime.Hours = 19;
+  sTime.Minutes = 4;
+  sTime.Seconds = 30;  
+
+  HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+  
+  sDate.Month = RTC_MONTH_AUGUST;
+  sDate.Date = 18;
+  sDate.Year = 24;
+
+  HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+}
+
+
 void Log_Event(const char* event){
+  RTC_TimeTypeDef sTime;
+  RTC_DateTypeDef sDate;
+
+  char timestamp[20];
   char  buffer[MAX_LOG_LENGTH] ;
-  snprintf(buffer, sizeof(buffer), "%s: %s\r\n", log_timestamp, event);
+
+  HAL_RTC_GetTime(&RTC_HANDLE, &sTime, RTC_FORMAT_BIN);
+  HAL_RTC_GetDate(&RTC_HANDLE, &sDate, RTC_FORMAT_BIN);
+
+  sprintf(timestamp, "%04d-%02d-%02d %02d:%02d:%02d",
+        sDate.Year + 2000,
+        sDate.Month,
+        sDate.Date,
+        sTime.Hours,
+        sTime.Minutes,
+        sTime.Seconds);
+
+  snprintf(buffer, sizeof(buffer), "%s: %s\r\n", timestamp, event);
 
   // TODO - uncomment this
 	// write_in_file(local_log_file_name, buffer);
@@ -1276,6 +1316,9 @@ int main(void)
   MX_USB_OTG_FS_USB_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
+
+
+  Init_RTCDateTime();
 
   // Set power OK 
   HAL_GPIO_WritePin(REG_POWER_OK_C_GPIO_Port, REG_POWER_OK_C_Pin, RELAY_ENERGIZED);
