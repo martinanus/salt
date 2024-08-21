@@ -56,6 +56,7 @@ void mqtt_connect() {
 }
 
 void messageReceived(String &topic, String &payload) {
+  Serial2.println(payload);
   Serial.println(payload);
 }
 
@@ -75,11 +76,13 @@ void sendDateTime(){
           ptm->tm_min, 
           ptm->tm_sec);
   
+  Serial2.println(formattedDateTime);
   Serial.println(formattedDateTime);
 }
 
 void setup() {
   Serial.begin(115200);
+  Serial2.begin(115200);
 
   
   WiFi.begin(wifi_ssid, wifi_psw);
@@ -115,8 +118,8 @@ void loop() {
   }
 
 
-  while (Serial.available() > 0) {
-    char incomingByte = Serial.read();
+  while (Serial2.available() > 0) {
+    char incomingByte = Serial2.read();
 
     if (incomingByte == '\n') {
       uartRxBuffer[uartRxBufferIndex] = '\0';      
