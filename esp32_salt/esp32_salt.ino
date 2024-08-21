@@ -31,8 +31,8 @@ char suscribeBuffer[BUFFER_SIZE];
 char uartRxBuffer[BUFFER_SIZE];
 int uartRxBufferIndex = 0;
 
-unsigned long lastMillis = 0;
-int i = 0;
+unsigned long previousMillis = 0;
+const long interval = 10000;
 
 
 void mqtt_connect() {
@@ -61,13 +61,13 @@ void messageReceived(String &topic, String &payload) {
 
 void sendDateTime(){
   timeClient.update();
-  
+
   unsigned long epochTime = timeClient.getEpochTime();
   
   struct tm *ptm = gmtime((time_t *)&epochTime);
   
-  char formattedDateTime[20];
-  sprintf(formattedDateTime, "%02d/%02d/%04d %02d:%02d:%02d", 
+  char formattedDateTime[29];
+  sprintf(formattedDateTime, "DATETIME:%02d/%02d/%04d %02d:%02d:%02d", 
           ptm->tm_mday, 
           ptm->tm_mon + 1, 
           ptm->tm_year + 1900, 
@@ -89,17 +89,16 @@ void setup() {
   }
   Serial.println("Connected to WiFi");
   
-  delay(1000);
+  delay(2000);
 
   timeClient.begin();
   sendDateTime();
   Serial.println("DateTime sended");
 
 
-
-  //mqtt_client.begin(mqtt_server, wifi_client);
-  //mqtt_client.onMessage(messageReceived);
-  //mqtt_connect();
+  mqtt_client.begin(mqtt_server, wifi_client);
+  mqtt_client.onMessage(messageReceived);
+  mqtt_connect();
 }
 
 void loop() {
@@ -108,6 +107,12 @@ void loop() {
   // if (!mqtt_client.connected()) {
   //   mqtt_connect();
   // }
+
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+    sendDateTime();
+  }
 
 
   while (Serial.available() > 0) {
