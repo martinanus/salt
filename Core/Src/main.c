@@ -233,7 +233,7 @@ void Activate_ChopRoutine(void);
 void Control_CriticalSignals(void);
 void Control_CTsignal(void);
 void Control_FEsignal(void);
-void Release_CriticalSignals(void);
+void Release_CriticalSignals(void); // TODO - not used
 
 
 
@@ -508,50 +508,37 @@ void Handle_SaltMode_Transition(void){
   Read_ActivationSwitchState();
 
   if (MAT_switch_state_1 == SWITCH_ON && MAT_switch_state_2 == SWITCH_ON){
-    // TO BE IMPLEMENTED
     if(salt_mode == MODO_NORMAL){
       Activate_Buzzer();
       Activate_SISBypass();
       Log_Event("MODO_NORMAL --> MODO_TOTAL");
     } else if (salt_mode == MODO_LIMITADO){
-      Release_CriticalSignals();
       HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_NORMAL);
-
       Log_Event("MODO_LIMITADO --> MODO_TOTAL");
     }
 		salt_mode = MODO_TOTAL;
 
 	} else if (MAL_switch_state_1 == SWITCH_ON && MAL_switch_state_2 == SWITCH_ON){
-    // TO BE IMPLEMENTED
     if(salt_mode == MODO_NORMAL){
       Activate_Buzzer();
       Activate_SISBypass();
-      // Control_CriticalSignals();
       HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_ENERGIZED);
-
       Log_Event("MODO_NORMAL --> MODO_LIMITADO");
     } else if (salt_mode == MODO_TOTAL){
-      // Control_CriticalSignals();
       HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_ENERGIZED);
-
       Log_Event("MODO_TOTAL --> MODO_LIMITADO");
     }
 		salt_mode = MODO_LIMITADO;
 
 	} else {
-    // TO BE IMPLEMENTED
     if(salt_mode == MODO_LIMITADO){
       Deactivate_Buzzer();
       Deactivate_SISBypass();
-      Release_CriticalSignals();
-
       HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_NORMAL);
       Log_Event("MODO_LIMITADO --> MODO_NORMAL");
     } else if (salt_mode == MODO_TOTAL){
       Deactivate_Buzzer();
       Deactivate_SISBypass();
-
-      Release_CriticalSignals();
       Log_Event("MODO_TOTAL --> MODO_NORMAL");
     }
 		salt_mode = MODO_NORMAL;  
@@ -1325,7 +1312,6 @@ int main(void)
 
   mount_filesystem(&fs);
   Log_Event("SD started OK");
-  //printf("%s: %s wrote in file: %s\r\n", log_timestamp, "SD started OK", local_log_file_name);
   Log_Event("POWER_OK");
 
   // Start GPS Callback
@@ -1372,24 +1358,13 @@ int main(void)
 	  
 
   Handle_SaltMode_Transition();
-
-	if (salt_mode == MODO_NORMAL){    
-		Read_SystemStatus();
-		Display_SystemStatus();
-		//Activate_ZoneRelay();
-    //ExecuteRemoteCommands
-    //ExecuteLocalCommands
-	} else if (salt_mode == MODO_LIMITADO){
-		Read_SystemStatus();
-		Display_SystemStatus();		
-    Set_CriticalSignals_State();
-    Control_CriticalSignals();
-    //ExecuteRemoteCommands
-    //ExecuteLocalCommands
-    
-	} else if (salt_mode == MODO_TOTAL){				
-	}
-
+	
+  Read_SystemStatus();
+  Display_SystemStatus();		
+  Set_CriticalSignals_State();
+  Control_CriticalSignals();
+  //ExecuteRemoteCommands
+  //ExecuteLocalCommands  
 
 
 	HAL_Delay(1000);
