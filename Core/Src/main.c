@@ -219,7 +219,7 @@ void setDigit6_regValue(void);
 void setDigit7_regValue(void);
 void Send_SystemStatus(void);
 void Activate_ZoneRelay(void);
-void Init_RTCDateTime(void);
+void Init_RTCDateTime(char * datetime);
 void Log_Event(const char* event);
 void Transmit_RemoteEvents(const char* buffer);
 void Activate_Buzzer(void);
@@ -564,10 +564,16 @@ void Read_MATSwitchState(void){
 }
 
 void Read_RemoteCommand(void){
+  char command[MAX_COMMAND_LENGTH];
 	if (WIFInew_line){
-		  printf(WIFIline);
-		  remote_command_active = COMMAND_ACTIVE;
-		  sprintf(remote_command_buffer, WIFIline);
+	  printf(WIFIline);
+	  remote_command_active = COMMAND_ACTIVE;
+	  sprintf(remote_command_buffer, WIFIline);
+      sscanf(remote_command_buffer, "%[^:]", command);
+      if (strcmp(command, "DATETIME") == 0) {
+        Init_RTCDateTime( remote_command_buffer + 9);
+      }
+      
 		  WIFInew_line = 0;
 	}else {
     // TO BE IMPLEMENTED
@@ -864,26 +870,30 @@ void Activate_ZoneRelay(void){
     }
 }
 
-void Init_RTCDateTime(void)
+void Init_RTCDateTime(char * datetime)
 {
-
-  // TO BE IMPLEMENTED - Get date from GPS or Wifi modules
 
   RTC_TimeTypeDef sTime = {0};
   RTC_DateTypeDef sDate = {0};
+  int day, month, year, hours, minutes, seconds;
 
-  sTime.Hours = 19;
-  sTime.Minutes = 4;
-  sTime.Seconds = 30;  
+  sscanf(datetime, "%02d/%02d/%04d %02d:%02d:%02d",
+               &day, &month, &year, &hours, &minutes, &seconds);
+
+
+  sTime.Hours   = hours;
+  sTime.Minutes = minutes;
+  sTime.Seconds = seconds;  
 
   HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
   
-  sDate.Month = RTC_MONTH_AUGUST;
-  sDate.Date = 18;
-  sDate.Year = 24;
+  sDate.Month = month;
+  sDate.Date  = day;
+  sDate.Year  = year - 2000; 
 
   HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 
+  
 }
 
 
@@ -1305,7 +1315,6 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
 
-  Init_RTCDateTime();
 
   // Set power OK 
   HAL_GPIO_WritePin(REG_POWER_OK_C_GPIO_Port, REG_POWER_OK_C_Pin, RELAY_ENERGIZED);
@@ -1319,8 +1328,9 @@ int main(void)
   HAL_UART_Receive_IT(&GPS_UART_HANDLE, &GPScharRead, 1);
 
   // Start WIFI Callback
+  HAL_GPIO_WritePin(ESP_EN_GPIO_Port, ESP_EN_Pin, 1);
   HAL_UART_RegisterCallback(&WIFI_UART_HANDLE, HAL_UART_RX_COMPLETE_CB_ID, WIFI_UART_Callback);
-  HAL_UART_Receive_IT(&WIFI_UART_HANDLE, &WIFIcharRead, 1);
+  HAL_UART_Receive_IT(&WIFI_UART_HANDLE, &WIFIcharRead, 1);  
 
   // Start RS_485 communication
   HAL_GPIO_WritePin(RS485_1_DIR_GPIO_Port , RS485_1_DIR_Pin, 0);
@@ -1353,7 +1363,6 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
-
     /* USER CODE BEGIN 3 */
 	  
 
@@ -1363,6 +1372,7 @@ int main(void)
   Display_SystemStatus();		
   Set_CriticalSignals_State();
   Control_CriticalSignals();
+  Read_RemoteCommand();
   //ExecuteRemoteCommands
   //ExecuteLocalCommands  
 
