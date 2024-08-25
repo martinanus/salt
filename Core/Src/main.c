@@ -80,6 +80,19 @@ uint8_t GPScharRead;
 uint8_t GPSidx;
 uint8_t GPSnew_line;
 
+char rs485_1_rxBuff[100];
+char rs485_1_line[100];
+uint8_t rs485_1_charRead;
+uint8_t rs485_1_idx;
+uint8_t rs485_1_new_line;
+
+char    rs485_2_rxBuff[100];
+char    rs485_2_line[100];
+uint8_t rs485_2_charRead;
+uint8_t rs485_2_idx;
+uint8_t rs485_2_new_line;
+
+
 char GPSsentence[] = {"$GPRMC"};
 struct GPRMC gprms = {
 	    .log_header = "",
@@ -99,9 +112,9 @@ volatile uint8_t ADC_ConvCplt = 0;
 const int adcChannelCount = sizeof(adc_results_dma) / sizeof(adc_results_dma[0]);
 
 float speed;
-float hasler_speed;
-float pulse_generator_speed;
-float gps_speed;
+float hasler_speed = -1;
+float pulse_generator_speed = -1;
+float gps_speed = -1;
 speed_source_t speed_source;
 speed_source_t prev_speed_source;
 
@@ -167,11 +180,6 @@ chop_profile_t chop_profile = CHOP_PROFILE_0;
 
 HAL_I2C_StateTypeDef i2c_state;
 HAL_StatusTypeDef result;
-
-char txData7[] = "Hello from UART7";
-char txData8[] = "Hello from UART8";
-char rxData7[16];
-char rxData8[16];
 
 /* USER CODE END PV */
 
@@ -301,17 +309,37 @@ void clearBuffer(char* buffer, size_t size) {
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   // TO BE IMPLEMENTED - Logic for reading speed from hasler and optical pulses
-  if (huart->Instance == UART7)
-  {
-    printf("Received on UART7: %s\r\n", rxData7);
-    clearBuffer(rxData7, sizeof(rxData7)); // Clear buffer
-    HAL_UART_Receive_IT(&RS485_1_UART_HANDLE, (uint8_t*)rxData7, sizeof(rxData7)); // Restart reception
-  }
-  else if (huart->Instance == UART8)
-  {
-    printf("Received on UART8: %s\r\n", rxData8);
-    clearBuffer(rxData8, sizeof(rxData8)); // Clear buffer
-    HAL_UART_Receive_IT(&RS485_2_UART_HANDLE, (uint8_t*)rxData8, sizeof(rxData8)); // Restart reception
+  if (huart->Instance == RS485_1_UART_HANDLE.Instance){
+    if (rs485_1_charRead == '\r' || rs485_1_charRead == '\n'){
+		  if (rs485_1_idx > 0){
+			  memcpy(rs485_1_line, rs485_1_rxBuff, rs485_1_idx);
+			  rs485_1_line[rs485_1_idx] = '\0';
+			  rs485_1_new_line = 1;
+			  rs485_1_rxBuff[0] = '\0';
+			  rs485_1_idx = 0;
+      }
+    } else {
+      rs485_1_rxBuff[rs485_1_idx++] = rs485_1_charRead;
+    }
+
+      rs485_1_charRead = 0;
+      HAL_UART_Receive_IT(&RS485_1_UART_HANDLE, &rs485_1_charRead, 1);
+
+  } else if (huart->Instance == RS485_2_UART_HANDLE.Instance){    
+    if (rs485_2_charRead == '\r' || rs485_2_charRead == '\n'){
+      if (rs485_2_idx > 0){
+        memcpy(rs485_2_line, rs485_2_rxBuff, rs485_2_idx);          
+        rs485_2_line[rs485_2_idx] = '\0';
+        rs485_2_new_line = 1;        
+        rs485_2_rxBuff[0] = '\0';
+        rs485_2_idx = 0;
+      } 
+      } else {
+        rs485_2_rxBuff[rs485_2_idx++] = rs485_2_charRead;
+      }
+
+      rs485_2_charRead = 0;
+      HAL_UART_Receive_IT(&RS485_2_UART_HANDLE, &rs485_2_charRead, 1);
   }
 }
 
@@ -415,13 +443,39 @@ void Read_Speed(void){
 }
 
 void Read_HaslerSpeed(void){
-    // TO BE IMPLEMENTED
-    hasler_speed = 22.7;
+  char * pEnd;
+  if (rs485_1_new_line){
+		                    
+      hasler_speed = strtof(rs485_1_line, &pEnd);              
+      if (pEnd == rs485_1_line) {
+          hasler_speed = -1;
+      }        
+      
+	  rs485_1_new_line = 0;
+	}
+  /* else {
+    // TO BE IMPLEMENTED - It should be some time validity
+		hasler_speed = -1;
+	}
+  */
 }
 
 void Read_PulseGeneratorSpeed(void){
-    // TO BE IMPLEMENTED
-    pulse_generator_speed = 21.4;
+  char * pEnd;
+  if (rs485_2_new_line){
+		                    
+      pulse_generator_speed = strtof(rs485_2_line, &pEnd);              
+      if (pEnd == rs485_2_line) {
+          pulse_generator_speed = -1;
+      }        
+      
+	  rs485_2_new_line = 0;
+	}
+  /* else {
+    // TO BE IMPLEMENTED - It should be some time validity
+		hasler_speed = -1;
+	}
+  */
 }
 
 void Read_GPSSpeed(void){
@@ -431,15 +485,19 @@ void Read_GPSSpeed(void){
 		  if (gprms.status == 'A' ){
 			  printf("GPS IS ACTIVE \r\n");
 			  print_GPRMC(&gprms);
+        // TO BE IMPLEMENTED - This should be converted to km/h unit
 			  gps_speed  = gprms.speed;
 		  }else{
 			  printf("GPS IS NOT ACTIVE\r\n");
 			  gps_speed = -1;
 		  }
 		  GPSnew_line = 0;
-	}else {
+	}
+  /* else {
+    // TO BE IMPLEMENTED - It should be some time validity
 		gps_speed = -1;
 	}
+  */
 }
 
 void Read_CurrentZone(void){
@@ -1333,10 +1391,10 @@ int main(void)
   HAL_UART_Receive_IT(&WIFI_UART_HANDLE, &WIFIcharRead, 1);  
 
   // Start RS_485 communication
-  HAL_GPIO_WritePin(RS485_1_DIR_GPIO_Port , RS485_1_DIR_Pin, 0);
-    HAL_GPIO_WritePin(RS485_2_DIR_GPIO_Port , RS485_2_DIR_Pin, 0);
-  HAL_UART_Receive_IT(&RS485_1_UART_HANDLE, (uint8_t*)rxData7, sizeof(rxData7));
-  HAL_UART_Receive_IT(&RS485_2_UART_HANDLE, (uint8_t*)rxData8, sizeof(rxData8));
+  HAL_GPIO_WritePin(RS485_1_DIR_GPIO_Port, RS485_1_DIR_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(RS485_2_DIR_GPIO_Port, RS485_2_DIR_Pin, GPIO_PIN_RESET);
+  HAL_UART_Receive_IT(&RS485_1_UART_HANDLE, &rs485_1_charRead, 1);
+  HAL_UART_Receive_IT(&RS485_2_UART_HANDLE, &rs485_2_charRead, 1);  
 
   // Start first ADC conversion
   HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t*) adc_results_dma, adcChannelCount);
