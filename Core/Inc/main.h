@@ -135,7 +135,8 @@ typedef enum
     SEVEN   = 7,    // 0b 0111
     EIGHT   = 8,    // 0b 1000
     NINE    = 9,    // 0b 1001
-    DASH    = 10    // 0b 1001
+    DASH    = 10,   // 0b 1001
+    NONE_DIGIT = 11 // 0b1111
 } seven_segment_digit_t;
 
 typedef struct 

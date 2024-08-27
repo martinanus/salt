@@ -29,7 +29,7 @@ HAL_StatusTypeDef LedDriver_Init(I2C_HandleTypeDef *hi2c){
   }
 
 uint8_t digitTo7Segment(uint8_t digit) {
-    static const uint8_t segmentMap[10] = {
+    static const uint8_t segmentMap[11] = {
 		0b01111110, // 0
 		0b00110000, // 1
 		0b01101101, // 2
@@ -39,11 +39,12 @@ uint8_t digitTo7Segment(uint8_t digit) {
 		0b01011111, // 6
 		0b01110000, // 7
 		0b01111111, // 8
-		0b01111011  // 9
+		0b01111011, // 9
+        0b00000001  // -
     };
 
-    if (digit > 9) {
-        return 0; 
+    if (digit > 10) {
+        return 0b00000000; // Return no digit 
     }
 
     return segmentMap[digit];

@@ -317,6 +317,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			  rs485_1_new_line = 1;
 			  rs485_1_rxBuff[0] = '\0';
 			  rs485_1_idx = 0;
+			  //printf("rs485_1: %s\r\n", rs485_1_line);
       }
     } else {
       rs485_1_rxBuff[rs485_1_idx++] = rs485_1_charRead;
@@ -333,6 +334,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         rs485_2_new_line = 1;        
         rs485_2_rxBuff[0] = '\0';
         rs485_2_idx = 0;
+        //printf("rs485_2: %s\r\n", rs485_2_line);
       } 
       } else {
         rs485_2_rxBuff[rs485_2_idx++] = rs485_2_charRead;
@@ -365,7 +367,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN){
         } else {
           chop_profile++;
         }
-        printf("Chop profile changed to n %d! \n", chop_profile);
         sprintf(local_log_buffer, "CHOP_PROFILE_%d", chop_profile);        
         Log_Event(local_log_buffer);
         previousMillis = currentMillis;
@@ -435,10 +436,10 @@ void Read_Speed(void){
       sprintf(local_log_buffer, "SPEED_SOURCE: %d", speed_source);        
       Log_Event(local_log_buffer);
     }
-    if (speed_source != SPEED_NONE){
-      sprintf(local_log_buffer, "SPEED: %.2f", speed);        
-      Log_Event(local_log_buffer);
-    }
+    // if (speed_source != SPEED_NONE){
+    //   sprintf(local_log_buffer, "SPEED: %.2f", speed);        
+    //   Log_Event(local_log_buffer);
+    // }
     
 }
 
@@ -480,15 +481,13 @@ void Read_PulseGeneratorSpeed(void){
 
 void Read_GPSSpeed(void){
 	if (GPSnew_line){
-		  printf(GPSline);
+		  //printf(GPSline);  
 		  parse_GPRMC((char*)GPSline, &gprms);
 		  if (gprms.status == 'A' ){
-			  printf("GPS IS ACTIVE \r\n");
 			  print_GPRMC(&gprms);
         // TO BE IMPLEMENTED - This should be converted to km/h unit
 			  gps_speed  = gprms.speed;
 		  }else{
-			  printf("GPS IS NOT ACTIVE\r\n");
 			  gps_speed = -1;
 		  }
 		  GPSnew_line = 0;
@@ -680,6 +679,13 @@ void Build_SpeedDisplay(void){
         speed_display[3].decimal_point = 0;
     }
 
+    if (speed_display[0].digit == ZERO){
+      speed_display[0].digit = NONE_DIGIT;
+      if (speed_display[1].digit == ZERO){
+        speed_display[1].digit = NONE_DIGIT;
+      }
+    }
+
     for (uint8_t digit=0; digit < 4 ; digit++){
         digit7Segment[digit]= digitTo7Segment(speed_display[digit].digit);
 
@@ -692,7 +698,7 @@ void Build_SpeedDisplay(void){
 
 void Build_LedIndicators(){
   if (salt_mode == MODO_NORMAL) {
-      mode_MAL_led = LED_G;
+      mode_MAL_led = LED_ALL_OFF;
       mode_MAT_led = LED_ALL_OFF;
 
       for (uint8_t i = 0; i < 5; i++){
@@ -997,37 +1003,48 @@ void Deactivate_Buzzer(void){
 void Activate_SISBypass(void){
   if (SIS_state[0].CT_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_1_CT_BP_C_GPIO_Port, SIS_1_CT_BP_C_Pin, RELAY_ENERGIZED);
+    Log_Event("SIS_state_1 CT signal bypassed");
   }
   if (SIS_state[0].FE_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_1_FE_BP_C_GPIO_Port, SIS_1_FE_BP_C_Pin, RELAY_ENERGIZED);
+    Log_Event("SIS_state_1 FE signal bypassed");
   }
 
   if (SIS_state[1].CT_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_2_CT_BP_C_GPIO_Port, SIS_2_CT_BP_C_Pin, RELAY_ENERGIZED);
+    Log_Event("SIS_state_2 CT signal bypassed");
+    
   }
   if (SIS_state[1].FE_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_2_FE_BP_C_GPIO_Port, SIS_2_FE_BP_C_Pin, RELAY_ENERGIZED);
+    Log_Event("SIS_state_2 FE signal bypassed");
   }
 
   if (SIS_state[2].CT_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_3_CT_BP_C_GPIO_Port, SIS_3_CT_BP_C_Pin, RELAY_ENERGIZED);
+    Log_Event("SIS_state_3 CT signal bypassed");
   }
   if (SIS_state[2].FE_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_3_FE_BP_C_GPIO_Port, SIS_3_FE_BP_C_Pin, RELAY_ENERGIZED);
+    Log_Event("SIS_state_3 FE signal bypassed");
   }
 
   if (SIS_state[3].CT_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_4_CT_BP_C_GPIO_Port, SIS_4_CT_BP_C_Pin, RELAY_ENERGIZED);
+    Log_Event("SIS_state_4 CT signal bypassed");
   }
   if (SIS_state[3].FE_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_4_FE_BP_C_GPIO_Port, SIS_4_FE_BP_C_Pin, RELAY_ENERGIZED);
+    Log_Event("SIS_state_4 FE signal bypassed");
   }
 
   if (SIS_state[4].CT_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_ENERGIZED);
+    Log_Event("SIS_state_5 CT signal bypassed");
   }
   if (SIS_state[4].FE_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_ENERGIZED);
+    Log_Event("SIS_state_5 FE signal bypassed");
   }
 
 }
@@ -1043,6 +1060,7 @@ void Deactivate_SISBypass(void){
   HAL_GPIO_WritePin(SIS_4_FE_BP_C_GPIO_Port, SIS_4_FE_BP_C_Pin, RELAY_NORMAL);
   HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_NORMAL);
   HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_NORMAL);    
+  Log_Event("All SIS CT and FE bypasses released");
 }
 
 void Reset_GPS_Power(void){
@@ -1139,7 +1157,7 @@ void Set_CriticalSignals_State(void){
   uint8_t speed_limit_to_decelerate = 30;   // km/h
   uint8_t speed_limit_to_accelerate = 25;   // km/h
   uint8_t speed_limit_to_brake = 36;        // km/h
-  uint8_t time_to_brake_s = 4;              // s --> thold = 30s
+  uint8_t time_to_brake_s = 10;             // s --> thold = 30s
   
   prev_CT_signal = CT_signal;
   prev_FE_signal = FE_signal;
@@ -1435,7 +1453,7 @@ int main(void)
   //ExecuteLocalCommands  
 
 
-	HAL_Delay(1000);
+	HAL_Delay(500);
 
 
 
