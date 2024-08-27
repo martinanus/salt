@@ -1,21 +1,21 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.h
-  * @brief          : Header for main.c file.
-  *                   This file contains the common defines of the application.
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.h
+ * @brief          : Header for main.c file.
+ *                   This file contains the common defines of the application.
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2023 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
@@ -23,170 +23,165 @@
 #define __MAIN_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
+    /* Private includes ----------------------------------------------------------*/
+    /* USER CODE BEGIN Includes */
 
-/* USER CODE END Includes */
+    /* USER CODE END Includes */
 
-/* Exported types ------------------------------------------------------------*/
-/* USER CODE BEGIN ET */
-typedef enum
-{
-  MODO_NORMAL 	= 0,
-  MODO_LIMITADO = 1,
-  MODO_TOTAL   	= 2
-} salt_mode_t;
+    /* Exported types ------------------------------------------------------------*/
+    /* USER CODE BEGIN ET */
+    typedef enum
+    {
+        MODO_NORMAL = 0,
+        MODO_LIMITADO = 1,
+        MODO_TOTAL = 2
+    } salt_mode_t;
 
-typedef enum
-{
-  SPEED_NONE        = 0,      
-  HASLER            = 1,      
-  PULSE_GENERATOR   = 2,      
-  GPS               = 3      
-} speed_source_t;
+    typedef enum
+    {
+        SPEED_NONE = 0,
+        HASLER = 1,
+        PULSE_GENERATOR = 2,
+        GPS = 3
+    } speed_source_t;
 
+    typedef enum
+    {
+        NO_ZONE = 0,
+        ZONE_1 = 1,
+        ZONE_2 = 2,
+        ZONE_3 = 3
+    } zones_t;
 
-typedef enum
-{
-    NO_ZONE     = 0,      
-    ZONE_1      = 1,      
-    ZONE_2      = 2,      
-    ZONE_3      = 3   
-} zones_t;
+    typedef enum
+    {
+        STATUS_OK = 0,
+        STATUS_ERROR = 1
+    } status_t;
 
+    typedef enum
+    {
+        RELAY_NORMAL = 0,
+        RELAY_ENERGIZED = 1
+    } relay_state_t;
 
-typedef enum
-{
-	STATUS_OK     = 0,
-	STATUS_ERROR  = 1
-} status_t;
+    typedef enum
+    {
+        SIGNAL_OK = 0,
+        SIGNAL_ERROR = 1
+    } SIS_signal_state_t;
 
+    typedef struct
+    {
+        SIS_signal_state_t FE_state;
+        SIS_signal_state_t CT_state;
+    } SIS_state_t;
 
-typedef enum 
-{
-    RELAY_NORMAL     = 0,
-	  RELAY_ENERGIZED  = 1
-} relay_state_t;
+    typedef enum
+    {
+        SIGNAL_UNINTERFERED = 0,
+        SIGNAL_BYPASSED = 1,
+        SIGNAL_OPEN = 2
+    } critical_signal_state_t;
 
-typedef enum 
-{
-  SIGNAL_OK     = 0,
-	SIGNAL_ERROR  = 1
-} SIS_signal_state_t;
+    typedef enum
+    {
+        SWITCH_ON = 0,
+        SWITCH_OFF = 1
+    } switch_state_t;
 
+    typedef enum
+    {
+        COMMAND_INACTIVE = 0,
+        COMMAND_ACTIVE = 1
+    } command_states_t;
 
-typedef struct
-{
-	SIS_signal_state_t FE_state;
-	SIS_signal_state_t CT_state;
-} SIS_state_t;
+    typedef enum
+    {
+        //    RGB
+        LED_ALL_OFF = 0, // 0b 000
+        LED_B = 1,       // 0b 001
+        LED_G = 2,       // 0b 010
+        LED_BG = 3,      // 0b 011
+        LED_R = 4,       // 0b 100
+        LED_RB = 5,      // 0b 101
+        LED_RG = 6,      // 0b 110
+        LED_RGB = 7      // 0b 111
+    } rgb_led_state_t;
 
-typedef enum
-{
-  SIGNAL_UNINTERFERED = 0,
-  SIGNAL_BYPASSED     = 1,
-  SIGNAL_OPEN         = 2
-} critical_signal_state_t;
+    typedef enum
+    {
+        ZERO = 0,       // 0b 0000
+        ONE = 1,        // 0b 0001
+        TWO = 2,        // 0b 0010
+        THREE = 3,      // 0b 0011
+        FOUR = 4,       // 0b 0100
+        FIVE = 5,       // 0b 0101
+        SIX = 6,        // 0b 0110
+        SEVEN = 7,      // 0b 0111
+        EIGHT = 8,      // 0b 1000
+        NINE = 9,       // 0b 1001
+        DASH = 10,      // 0b 1001
+        NONE_DIGIT = 11 // 0b1111
+    } seven_segment_digit_t;
 
+    typedef struct
+    {
+        seven_segment_digit_t digit;
+        uint8_t decimal_point;
+    } seven_segment_t;
 
-typedef enum
-{
-    SWITCH_ON         = 0,
-	SWITCH_OFF          = 1
-} switch_state_t;
+    typedef enum
+    {
+        LED_OFF = 0,
+        LED_ON = 1
+    } led_state_t;
 
+    typedef enum
+    {
+        BUZZER_OFF = 0,
+        BUZZER_ON = 1
+    } buzzer_state_t;
 
-typedef enum 
-{
-    COMMAND_INACTIVE    = 0,
-	COMMAND_ACTIVE      = 1
-} command_states_t;
+    typedef enum
+    {
+        CHOP_PROFILE_0 = 0,
+        CHOP_PROFILE_1 = 1,
+        CHOP_PROFILE_2 = 2,
+        CHOP_PROFILE_3 = 3,
+        CHOP_PROFILE_4 = 4
+    } chop_profile_t;
 
+    typedef enum
+    {
+        CHOP_DEACTIVATED = 0,
+        CHOP_READY_TO_START = 1,
+        CHOP_ACCELERATING = 2,
+        CHOP_DECELERATING = 3,
+        CHOP_BRAKING = 4
 
-typedef enum 
-{
-                        //    RGB
-    LED_ALL_OFF     = 0,    // 0b 000
-    LED_B           = 1,    // 0b 001
-    LED_G           = 2,    // 0b 010
-    LED_BG          = 3,    // 0b 011
-    LED_R           = 4,    // 0b 100
-    LED_RB          = 5,    // 0b 101
-    LED_RG          = 6,    // 0b 110
-    LED_RGB         = 7     // 0b 111
-} rgb_led_state_t;
+    } chop_state_t;
+    /* USER CODE END ET */
 
+    /* Exported constants --------------------------------------------------------*/
+    /* USER CODE BEGIN EC */
 
-typedef enum
-{
-    ZERO    = 0,    // 0b 0000
-    ONE     = 1,    // 0b 0001
-    TWO     = 2,    // 0b 0010
-    THREE   = 3,    // 0b 0011
-    FOUR    = 4,    // 0b 0100
-    FIVE    = 5,    // 0b 0101
-    SIX     = 6,    // 0b 0110
-    SEVEN   = 7,    // 0b 0111
-    EIGHT   = 8,    // 0b 1000
-    NINE    = 9,    // 0b 1001
-    DASH    = 10,   // 0b 1001
-    NONE_DIGIT = 11 // 0b1111
-} seven_segment_digit_t;
+    /* USER CODE END EC */
 
-typedef struct 
-{
-  seven_segment_digit_t digit;
-  uint8_t decimal_point;  
-} seven_segment_t;
+    /* Exported macro ------------------------------------------------------------*/
+    /* USER CODE BEGIN EM */
 
+    /* USER CODE END EM */
 
-typedef enum {
-	LED_OFF = 0,
-	LED_ON = 1
-}led_state_t;
-
-typedef enum {
-	BUZZER_OFF = 0,
-	BUZZER_ON = 1
-}buzzer_state_t;
-
-typedef enum {
-	CHOP_PROFILE_0 = 0,
-	CHOP_PROFILE_1 = 1,
-	CHOP_PROFILE_2 = 2,
-	CHOP_PROFILE_3 = 3,
-	CHOP_PROFILE_4 = 4
-}chop_profile_t;
-
-typedef enum
-{
-    CHOP_DEACTIVATED    = 0,
-    CHOP_READY_TO_START = 1,
-    CHOP_ACCELERATING   = 2,      
-    CHOP_DECELERATING   = 3,      
-    CHOP_BRAKING        = 4      
-    
-} chop_state_t;
-/* USER CODE END ET */
-
-/* Exported constants --------------------------------------------------------*/
-/* USER CODE BEGIN EC */
-
-/* USER CODE END EC */
-
-/* Exported macro ------------------------------------------------------------*/
-/* USER CODE BEGIN EM */
-
-/* USER CODE END EM */
-
-/* Exported functions prototypes ---------------------------------------------*/
-void Error_Handler(void);
+    /* Exported functions prototypes ---------------------------------------------*/
+    void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 
@@ -373,21 +368,19 @@ void Error_Handler(void);
 #define MAX_COMMAND_LENGTH 256
 #define BTN_DEBOUNCE_MS 100
 
-#define SPEED_STOP 0.5                // km/h
-#define SPEED_READ_VALIDITY_S 2       // s 
-#define ZONE_READ_VALIDITY_S  60      // s
-#define KNOT_TO_KM_H_FACTOR 1.852     // multiplier factor
+#define SPEED_STOP 0.5            // km/h
+#define SPEED_READ_VALIDITY_S 2   // s
+#define ZONE_READ_VALIDITY_S 60   // s
+#define KNOT_TO_KM_H_FACTOR 1.852 // multiplier factor
 
-
-#define REG_MODO_LIMITADO_C_Pin REG_1_C_Pin 
-#define REG_MODO_LIMITADO_C_GPIO_Port  REG_1_C_GPIO_Port 
-#define REG_POWER_OK_C_Pin REG_2_C_Pin 
-#define REG_POWER_OK_C_GPIO_Port REG_2_C_GPIO_Port 
-#define REG_FE_C_Pin REG_3_C_Pin 
-#define REG_FE_C_GPIO_Port REG_3_C_GPIO_Port 
-#define REG_CT_C_Pin REG_4_C_Pin 
-#define REG_CT_C_GPIO_Port REG_4_C_GPIO_Port 
-
+#define REG_MODO_LIMITADO_C_Pin REG_1_C_Pin
+#define REG_MODO_LIMITADO_C_GPIO_Port REG_1_C_GPIO_Port
+#define REG_POWER_OK_C_Pin REG_2_C_Pin
+#define REG_POWER_OK_C_GPIO_Port REG_2_C_GPIO_Port
+#define REG_FE_C_Pin REG_3_C_Pin
+#define REG_FE_C_GPIO_Port REG_3_C_GPIO_Port
+#define REG_CT_C_Pin REG_4_C_Pin
+#define REG_CT_C_GPIO_Port REG_4_C_GPIO_Port
 
 /* USER CODE END Private defines */
 
