@@ -22,7 +22,6 @@
 #define LONGITUDE_MINUTES_LENGTH 2
 #define LONGITUDE_SECONDS_LENGTH 11
 
-
 #define DAYS_LENGTH 2
 #define MONTHS_LENGTH 2
 #define YEARS_LENGTH 2
@@ -30,15 +29,16 @@
 #define UTC_MINUTES_LENGTH 2
 #define UTC_SECOND_LENGTH 5
 
-
-typedef struct {
+typedef struct
+{
 	int degrees;
 	int minutes;
 	int seconds;
 	char direction;
 } coordinates_t;
 
-typedef struct {
+typedef struct
+{
 	int year;
 	int month;
 	int day;
@@ -47,22 +47,22 @@ typedef struct {
 	float seconds;
 } datetime_t;
 
-struct GPRMC {
-	char log_header[LOG_HEADER_LENGTH + 1];  //  1- $ + GPRMC
-	datetime_t datetime;                     //  2- hhmmss.ss | 10- ddmmmyy
-	char status;                             //  3- A=valid | V=invalid
-	coordinates_t latitude;   //  4- latitude DDmm.mm | 5- N=north | S=south
-	coordinates_t longitude;  //  6- latitude DDdmm.mm | 7- E=east | W=west
-	float speed;              //  8- SoG, knots
+struct GPRMC
+{
+	char log_header[LOG_HEADER_LENGTH + 1]; //  1- $ + GPRMC
+	datetime_t datetime;					//  2- hhmmss.ss | 10- ddmmmyy
+	char status;							//  3- A=valid | V=invalid
+	coordinates_t latitude;					//  4- latitude DDmm.mm | 5- N=north | S=south
+	coordinates_t longitude;				//  6- latitude DDdmm.mm | 7- E=east | W=west
+	float speed;							//  8- SoG, knots
 	// track make good                          9
 	// mag var                                 11
 	// mag var dir                             12
-	char checksum[CHECKSUM_LENGTH + 1];  // 13- Mode + *xx + CR-LF
+	char checksum[CHECKSUM_LENGTH + 1]; // 13- Mode + *xx + CR-LF
 };
 
 void parse_GPRMC(const char *line, struct GPRMC *data);
 void print_GPRMC(struct GPRMC *data);
 // void transmit_GPRMC(UART_HandleTypeDef *huart, struct GPRMC *data);
-
 
 #endif /* SRC_GPS_H_ */

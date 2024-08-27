@@ -346,7 +346,7 @@ extern "C"
 #define LD2_Pin GPIO_PIN_7
 #define LD2_GPIO_Port GPIOB
 
-/* USER CODE BEGIN Private defines */
+    /* USER CODE BEGIN Private defines */
 
 #define WIFI_UART_HANDLE huart4
 #define GPS_UART_HANDLE huart5
@@ -382,7 +382,7 @@ extern "C"
 #define REG_CT_C_Pin REG_4_C_Pin
 #define REG_CT_C_GPIO_Port REG_4_C_GPIO_Port
 
-/* USER CODE END Private defines */
+    /* USER CODE END Private defines */
 
 #ifdef __cplusplus
 }
