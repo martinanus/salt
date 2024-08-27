@@ -79,18 +79,22 @@ char GPSline[100];
 uint8_t GPScharRead;
 uint8_t GPSidx;
 uint8_t GPSnew_line;
+uint32_t gps_dataMillis = 0;
+
 
 char rs485_1_rxBuff[100];
 char rs485_1_line[100];
 uint8_t rs485_1_charRead;
 uint8_t rs485_1_idx;
 uint8_t rs485_1_new_line;
+uint32_t rs485_1_dataMillis = 0;
 
 char    rs485_2_rxBuff[100];
 char    rs485_2_line[100];
 uint8_t rs485_2_charRead;
 uint8_t rs485_2_idx;
 uint8_t rs485_2_new_line;
+uint32_t rs485_2_dataMillis = 0;
 
 
 char GPSsentence[] = {"$GPRMC"};
@@ -270,13 +274,14 @@ void GPS_UART_Callback(UART_HandleTypeDef *huart)
 			  memcpy(GPSline, GPSrxBuff, GPSidx);
 			  GPSnew_line = 1;
 			  GPSrxBuff[0] = 0;
+        gps_dataMillis = HAL_GetTick();
+        //printf("GPS: %s\r\n", GPSline);
 		  } else {
 			  GPSidx = 0;
 		  }
 	  } else {
 		  GPSrxBuff[GPSidx++] = GPScharRead;
 	  }
-
 
 	  HAL_UART_Receive_IT(&GPS_UART_HANDLE, &GPScharRead, 1);
 
@@ -293,6 +298,7 @@ void WIFI_UART_Callback(UART_HandleTypeDef *huart)
 			  WIFInew_line = 1;
 			  WIFIrxBuff[0] = '\0';
 			  WIFIidx = 0;
+        //printf("WIFI: %s\r\n", WIFIline);
 		  }
 	  } else {
 		  WIFIrxBuff[WIFIidx++] = WIFIcharRead;
@@ -316,8 +322,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			  rs485_1_line[rs485_1_idx] = '\0';
 			  rs485_1_new_line = 1;
 			  rs485_1_rxBuff[0] = '\0';
-			  rs485_1_idx = 0;
-			  //printf("rs485_1: %s\r\n", rs485_1_line);
+			  rs485_1_idx = 0;			  
+        rs485_1_dataMillis = HAL_GetTick();
+        //printf("rs485_1: %s\r\n", rs485_1_line);
       }
     } else {
       rs485_1_rxBuff[rs485_1_idx++] = rs485_1_charRead;
@@ -333,7 +340,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         rs485_2_line[rs485_2_idx] = '\0';
         rs485_2_new_line = 1;        
         rs485_2_rxBuff[0] = '\0';
-        rs485_2_idx = 0;
+        rs485_2_idx = 0;        
+        rs485_2_dataMillis = HAL_GetTick();
         //printf("rs485_2: %s\r\n", rs485_2_line);
       } 
       } else {
@@ -444,6 +452,7 @@ void Read_Speed(void){
 }
 
 void Read_HaslerSpeed(void){
+  uint32_t currentMillis;
   char * pEnd;
   if (rs485_1_new_line){
 		                    
@@ -454,14 +463,15 @@ void Read_HaslerSpeed(void){
       
 	  rs485_1_new_line = 0;
 	}
-  /* else {
-    // TO BE IMPLEMENTED - It should be some time validity
-		hasler_speed = -1;
-	}
-  */
+
+  currentMillis = HAL_GetTick();
+  if (currentMillis - rs485_1_dataMillis > SPEED_READ_VALIDITY_S*1000){
+    hasler_speed = -1;
+  }
 }
 
 void Read_PulseGeneratorSpeed(void){
+  uint32_t currentMillis;
   char * pEnd;
   if (rs485_2_new_line){
 		                    
@@ -472,40 +482,49 @@ void Read_PulseGeneratorSpeed(void){
       
 	  rs485_2_new_line = 0;
 	}
-  /* else {
-    // TO BE IMPLEMENTED - It should be some time validity
-		hasler_speed = -1;
-	}
-  */
+    
+  currentMillis = HAL_GetTick();
+  if (currentMillis - rs485_2_dataMillis > SPEED_READ_VALIDITY_S*1000){
+    pulse_generator_speed = -1;
+  }
 }
 
 void Read_GPSSpeed(void){
+  uint32_t currentMillis;
 	if (GPSnew_line){
-		  //printf(GPSline);  
 		  parse_GPRMC((char*)GPSline, &gprms);
 		  if (gprms.status == 'A' ){
 			  print_GPRMC(&gprms);
-        // TO BE IMPLEMENTED - This should be converted to km/h unit
-			  gps_speed  = gprms.speed;
+			  gps_speed  = gprms.speed * KNOT_TO_KM_H_FACTOR;
 		  }else{
 			  gps_speed = -1;
 		  }
 		  GPSnew_line = 0;
 	}
-  /* else {
-    // TO BE IMPLEMENTED - It should be some time validity
-		gps_speed = -1;
-	}
-  */
+  currentMillis = HAL_GetTick();
+  if (currentMillis - gps_dataMillis > SPEED_READ_VALIDITY_S*1000){
+    gps_speed = -1;
+  }
 }
 
 void Read_CurrentZone(void){
+  uint32_t currentMillis;
   prev_zone = current_zone;
 
-	// TO BE IMPLEMENTED
-	// using gprms.latitude  gprms.longitude to calculate distance from origin point
-	current_zone = ZONE_1;
+  if (gprms.status == 'A' ){
+    current_zone = ZONE_1;
+    // TO BE IMPLEMENTED
+    // using gprms.latitude  gprms.longitude to calculate distance from origin point
+  }else{
+    current_zone = NO_ZONE;
+  }
 
+  currentMillis = HAL_GetTick();
+  if (currentMillis - gps_dataMillis > ZONE_READ_VALIDITY_S*1000){
+    current_zone = NO_ZONE;
+  }
+	
+	
   if (current_zone != prev_zone){
     sprintf(local_log_buffer, "ZONE: %d", current_zone);
     Log_Event(local_log_buffer);
@@ -623,25 +642,35 @@ void Read_MATSwitchState(void){
 void Read_RemoteCommand(void){
   char command[MAX_COMMAND_LENGTH];
 	if (WIFInew_line){
-	  printf(WIFIline);
-	  remote_command_active = COMMAND_ACTIVE;
+	  
 	  sprintf(remote_command_buffer, WIFIline);
       sscanf(remote_command_buffer, "%[^:]", command);
+
       if (strcmp(command, "DATETIME") == 0) {
         Init_RTCDateTime( remote_command_buffer + 9);
       }
+      // TO BE IMPLEMENTED - define commands
+      /*
+      else if (strcmp(command, "COMMAND1") == 0){
+        // DO SOMETHING
+        remote_command_active = COMMAND_ACTIVE;
+
+      }else if (strcmp(command, "COMMAND2") == 0){
+        // DO SOMETHING
+        remote_command_active = COMMAND_ACTIVE;
+      }
+      */
       
 		  WIFInew_line = 0;
 	}else {
     // TO BE IMPLEMENTED
     // Apply some delay for valid command
 		remote_command_active = COMMAND_INACTIVE;
-		sprintf(remote_command_buffer, "NO COMM");
 	}
 }
 
 void Read_LocalCommand(void){
-  // TO BE IMPLEMENTED - this is get by uart3 ? what are the commands? 
+  // TO BE IMPLEMENTED - this is get by uart3? USB OTG? what are the commands? 
 	local_command_active = COMMAND_ACTIVE;
 	sprintf(local_command_buffer, "myLocCom");
 }
@@ -1003,48 +1032,48 @@ void Deactivate_Buzzer(void){
 void Activate_SISBypass(void){
   if (SIS_state[0].CT_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_1_CT_BP_C_GPIO_Port, SIS_1_CT_BP_C_Pin, RELAY_ENERGIZED);
-    Log_Event("SIS_state_1 CT signal bypassed");
+    Log_Event("BYPASS_ACTIVE: SIS_1_CT");
   }
   if (SIS_state[0].FE_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_1_FE_BP_C_GPIO_Port, SIS_1_FE_BP_C_Pin, RELAY_ENERGIZED);
-    Log_Event("SIS_state_1 FE signal bypassed");
+    Log_Event("BYPASS_ACTIVE: SIS_1_FE");
   }
 
   if (SIS_state[1].CT_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_2_CT_BP_C_GPIO_Port, SIS_2_CT_BP_C_Pin, RELAY_ENERGIZED);
-    Log_Event("SIS_state_2 CT signal bypassed");
+    Log_Event("BYPASS_ACTIVE: SIS_2_CT");
     
   }
   if (SIS_state[1].FE_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_2_FE_BP_C_GPIO_Port, SIS_2_FE_BP_C_Pin, RELAY_ENERGIZED);
-    Log_Event("SIS_state_2 FE signal bypassed");
+    Log_Event("BYPASS_ACTIVE: SIS_2_FE");
   }
 
   if (SIS_state[2].CT_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_3_CT_BP_C_GPIO_Port, SIS_3_CT_BP_C_Pin, RELAY_ENERGIZED);
-    Log_Event("SIS_state_3 CT signal bypassed");
+    Log_Event("BYPASS_ACTIVE: SIS_3_CT");
   }
   if (SIS_state[2].FE_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_3_FE_BP_C_GPIO_Port, SIS_3_FE_BP_C_Pin, RELAY_ENERGIZED);
-    Log_Event("SIS_state_3 FE signal bypassed");
+    Log_Event("BYPASS_ACTIVE: SIS_3_FE");
   }
 
   if (SIS_state[3].CT_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_4_CT_BP_C_GPIO_Port, SIS_4_CT_BP_C_Pin, RELAY_ENERGIZED);
-    Log_Event("SIS_state_4 CT signal bypassed");
+    Log_Event("BYPASS_ACTIVE: SIS_4_CT");
   }
   if (SIS_state[3].FE_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_4_FE_BP_C_GPIO_Port, SIS_4_FE_BP_C_Pin, RELAY_ENERGIZED);
-    Log_Event("SIS_state_4 FE signal bypassed");
+    Log_Event("BYPASS_ACTIVE: SIS_4_FE");
   }
 
   if (SIS_state[4].CT_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_ENERGIZED);
-    Log_Event("SIS_state_5 CT signal bypassed");
+    Log_Event("BYPASS_ACTIVE: SIS_5_CT");
   }
   if (SIS_state[4].FE_state == SIGNAL_ERROR){
     HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_ENERGIZED);
-    Log_Event("SIS_state_5 FE signal bypassed");
+    Log_Event("BYPASS_ACTIVE: SIS_5_FE");
   }
 
 }
@@ -1060,7 +1089,7 @@ void Deactivate_SISBypass(void){
   HAL_GPIO_WritePin(SIS_4_FE_BP_C_GPIO_Port, SIS_4_FE_BP_C_Pin, RELAY_NORMAL);
   HAL_GPIO_WritePin(SIS_5_CT_BP_C_GPIO_Port, SIS_5_CT_BP_C_Pin, RELAY_NORMAL);
   HAL_GPIO_WritePin(SIS_5_FE_BP_C_GPIO_Port, SIS_5_FE_BP_C_Pin, RELAY_NORMAL);    
-  Log_Event("All SIS CT and FE bypasses released");
+  Log_Event("BYPASS_RELEASED: ALL_SIS_CT_FE");
 }
 
 void Reset_GPS_Power(void){

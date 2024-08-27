@@ -374,6 +374,9 @@ void Error_Handler(void);
 #define BTN_DEBOUNCE_MS 100
 
 #define SPEED_STOP 0.5                // km/h
+#define SPEED_READ_VALIDITY_S 2       // s 
+#define ZONE_READ_VALIDITY_S  60      // s
+#define KNOT_TO_KM_H_FACTOR 1.852     // multiplier factor
 
 
 #define REG_MODO_LIMITADO_C_Pin REG_1_C_Pin 
