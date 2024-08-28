@@ -223,6 +223,10 @@ void Read_ActivationSwitchState(void);
 void Read_MALSwitchState(void);
 void Read_MATSwitchState(void);
 void Read_RemoteCommand(void);
+void Update_RTCDateTime(char *command);
+void Update_CommandValidity(char *command);
+void Update_SpeedConfig(char *command);
+void Update_ChopConfig(char *command);
 void Read_LocalCommand(void);
 void Display_SystemStatus(void);
 void Build_SystemStatus(void);
@@ -236,7 +240,6 @@ void setDigit6_regValue(void);
 void setDigit7_regValue(void);
 void Send_SystemStatus(void);
 void Activate_ZoneRelay(void);
-void Init_RTCDateTime(char *datetime);
 void Log_Event(const char *event);
 void Transmit_RemoteEvents(const char *buffer);
 void Activate_Buzzer(void);
@@ -752,43 +755,40 @@ void Read_RemoteCommand(void)
 
         if (strcmp(command, "DATETIME") == 0)
         {
-            Init_RTCDateTime(remote_command_buffer + strlen(command) + 1);
+            Update_RTCDateTime(remote_command_buffer + strlen(command) + 1);
         }
         else if (strcmp(command, "AISLADO_TOTAL") == 0)
         {
+            // TO BE IMPLEMENTED
         }
         else if (strcmp(command, "PARADA_TOTAL") == 0)
         {
+            // TO BE IMPLEMENTED
         }
         else if (strcmp(command, "COCHE_DERIVA") == 0)
         {
+            // TO BE IMPLEMENTED
         }
         else if (strcmp(command, "INTERMITENTE") == 0)
         {
+            // TO BE IMPLEMENTED
         }
         else if (strcmp(command, "CANCEL") == 0)
         {
-        }
-        else if (strcmp(command, "SPEED_CONFIG") == 0)
-        {
-        }
-        else if (strcmp(command, "INTERMITENTE_CONFIG") == 0)
-        {
+            // TO BE IMPLEMENTED
         }
         else if (strcmp(command, "COMMAND_VALIDITY_CONFIG") == 0)
         {
+            Update_CommandValidity(remote_command_buffer + strlen(command) + 1);
         }
-        // TO BE IMPLEMENTED - define commands
-        /*
-        else if (strcmp(command, "COMMAND1") == 0){
-          // DO SOMETHING
-          remote_command_active = COMMAND_ACTIVE;
-
-        }else if (strcmp(command, "COMMAND2") == 0){
-          // DO SOMETHING
-          remote_command_active = COMMAND_ACTIVE;
+        else if (strcmp(command, "SPEED_CONFIG") == 0)
+        {
+            Update_SpeedConfig(remote_command_buffer + strlen(command) + 1);
         }
-        */
+        else if (strcmp(command, "INTERMITENTE_CONFIG") == 0)
+            Update_ChopConfig(remote_command_buffer + strlen(command) + 1);
+        {
+        }
 
         WIFInew_line = 0;
     }
@@ -797,6 +797,66 @@ void Read_RemoteCommand(void)
         // TO BE IMPLEMENTED
         // Apply some delay for valid command
         remote_command_active = COMMAND_INACTIVE;
+    }
+}
+
+void Update_RTCDateTime(char *command)
+{
+
+    RTC_TimeTypeDef sTime = {0};
+    RTC_DateTypeDef sDate = {0};
+    int day, month, year, hours, minutes, seconds;
+
+    sscanf(command, "%02d/%02d/%04d %02d:%02d:%02d",
+           &day, &month, &year, &hours, &minutes, &seconds);
+
+    sTime.Hours = hours;
+    sTime.Minutes = minutes;
+    sTime.Seconds = seconds;
+
+    HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+
+    sDate.Month = month;
+    sDate.Date = day;
+    sDate.Year = year - 2000;
+
+    HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+}
+
+void Update_CommandValidity(char *command)
+{
+    uint8_t extracted_number = 0;
+
+    if (sscanf(command, "%hhu", &extracted_number) == 1)
+    {
+        command_validity = extracted_number;
+        sprintf(local_log_buffer, "COMMAND_VALIDITY: %d", command_validity);
+        Log_Event(local_log_buffer);
+    }
+}
+
+void Update_SpeedConfig(char *command)
+{
+    uint8_t speeds[4];
+
+    if (sscanf(command, "%hhu,%hhu,%hhu,%hhu", &speeds[0], &speeds[1], &speeds[2], &speeds[3]) == 4)
+    {
+        memcpy(speed_configs, speeds, sizeof(speed_configs));
+        sprintf(local_log_buffer, "SPEED_CONFIG: %u,%u,%u,%u", speeds[0], speeds[1], speeds[2], speeds[3]);
+        Log_Event(local_log_buffer);
+    }
+}
+
+void Update_ChopConfig(char *command)
+{
+    uint8_t profile;
+    uint8_t chop_parameters[4];
+
+    if (sscanf(command, "%hhu,%hhu,%hhu,%hhu,%hhu", &profile, &chop_parameters[0], &chop_parameters[1], &chop_parameters[2], &chop_parameters[3]) == 5)
+    {
+        memcpy(chop_profile_config[profile], chop_parameters, sizeof(chop_profile_config[profile]));
+        sprintf(local_log_buffer, "CHOP_CONFIG_PROF_%u: %u,%u,%u,%u", profile, chop_parameters[0], chop_parameters[1], chop_parameters[2], chop_parameters[3]);
+        Log_Event(local_log_buffer);
     }
 }
 
@@ -1154,29 +1214,6 @@ void Activate_ZoneRelay(void)
         sprintf(local_log_buffer, "ZONE_RELAY: %d", zone_relay);
         Log_Event(local_log_buffer);
     }
-}
-
-void Init_RTCDateTime(char *datetime)
-{
-
-    RTC_TimeTypeDef sTime = {0};
-    RTC_DateTypeDef sDate = {0};
-    int day, month, year, hours, minutes, seconds;
-
-    sscanf(datetime, "%02d/%02d/%04d %02d:%02d:%02d",
-           &day, &month, &year, &hours, &minutes, &seconds);
-
-    sTime.Hours = hours;
-    sTime.Minutes = minutes;
-    sTime.Seconds = seconds;
-
-    HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-
-    sDate.Month = month;
-    sDate.Date = day;
-    sDate.Year = year - 2000;
-
-    HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 }
 
 void Log_Event(const char *event)

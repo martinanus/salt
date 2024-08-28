@@ -378,7 +378,7 @@ extern "C"
 #define DISTANCE_LIMIT_ZONE_1 10       // Distance in straight line from origin point
 #define DISTANCE_LIMIT_ZONE_2 40       // Distance in straight line from origin point
 
-#define COMMAND_VALIDITY_INITIAL 10
+#define COMMAND_VALIDITY_INITIAL 10           // s
 #define SPEED_CONFIG_INITIAL {30, 25, 36, 10} // speed_limit_to_decelerate, speed_limit_to_accelerate, speed_limit_to_brake, time_to_brake_s
 #define CHOP_PROFILE_1_INITIAL {3, 7, 3, 10}  //  time_to_accelerate, time_to_decelerate, number_of_cycles_before_break, time_to_brake
 #define CHOP_PROFILE_2_INITIAL {6, 14, 4, 20}
