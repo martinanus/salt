@@ -64,6 +64,16 @@ UART_HandleTypeDef huart3;
 
 salt_mode_t salt_mode = MODO_NORMAL;
 
+uint8_t command_validity = COMMAND_VALIDITY_INITIAL;
+uint8_t speed_configs[4] = SPEED_CONFIG_INITIAL;
+uint8_t chop_profile_config[5][4] = {
+    CHOP_PROFILE_1_INITIAL,
+    CHOP_PROFILE_2_INITIAL,
+    CHOP_PROFILE_3_INITIAL,
+    CHOP_PROFILE_4_INITIAL,
+    CHOP_PROFILE_5_INITIAL,
+};
+
 char WIFIrxBuff[100];
 char WIFIline[100];
 uint8_t WIFIcharRead;
@@ -742,7 +752,31 @@ void Read_RemoteCommand(void)
 
         if (strcmp(command, "DATETIME") == 0)
         {
-            Init_RTCDateTime(remote_command_buffer + 9);
+            Init_RTCDateTime(remote_command_buffer + strlen(command) + 1);
+        }
+        else if (strcmp(command, "AISLADO_TOTAL") == 0)
+        {
+        }
+        else if (strcmp(command, "PARADA_TOTAL") == 0)
+        {
+        }
+        else if (strcmp(command, "COCHE_DERIVA") == 0)
+        {
+        }
+        else if (strcmp(command, "INTERMITENTE") == 0)
+        {
+        }
+        else if (strcmp(command, "CANCEL") == 0)
+        {
+        }
+        else if (strcmp(command, "SPEED_CONFIG") == 0)
+        {
+        }
+        else if (strcmp(command, "INTERMITENTE_CONFIG") == 0)
+        {
+        }
+        else if (strcmp(command, "COMMAND_VALIDITY_CONFIG") == 0)
+        {
         }
         // TO BE IMPLEMENTED - define commands
         /*
@@ -1349,11 +1383,10 @@ void Set_CriticalSignals_State(void)
     static uint32_t last_FE_signal_activation_ms = 0;
     uint32_t currentMillis;
 
-    // TO BE IMPLEMENTED - these speeds should be configurable
-    uint8_t speed_limit_to_decelerate = 30; // km/h
-    uint8_t speed_limit_to_accelerate = 25; // km/h
-    uint8_t speed_limit_to_brake = 36;      // km/h
-    uint8_t time_to_brake_s = 10;           // s --> thold = 30s
+    uint8_t speed_limit_to_decelerate = speed_configs[0]; // km/h
+    uint8_t speed_limit_to_accelerate = speed_configs[1]; // km/h
+    uint8_t speed_limit_to_brake = speed_configs[2];      // km/h
+    uint8_t time_to_brake_s = speed_configs[3];           // s --> thold = 30s
 
     prev_CT_signal = CT_signal;
     prev_FE_signal = FE_signal;
@@ -1411,12 +1444,14 @@ void Activate_ChopRoutine(void)
     static chop_state_t chop_state = CHOP_READY_TO_START;
 
     uint32_t currentMillis;
+    uint8_t chop_profile_selected[4];
 
-    // TO BE IMPLEMENTED - these times should be configurable
-    uint8_t time_to_accelerate[5] = {3, 6, 9, 12, 15};
-    uint8_t time_to_decelerate[5] = {7, 14, 21, 28, 35};
-    uint8_t number_of_cycles_before_break[5] = {3, 4, 5, 6, 7};
-    uint8_t time_to_brake[5] = {10, 20, 30, 40, 50};
+    memcpy(chop_profile_selected, chop_profile_config[chop_profile], sizeof(chop_profile_selected));
+
+    uint8_t time_to_accelerate = chop_profile_selected[0];
+    uint8_t time_to_decelerate = chop_profile_selected[1];
+    uint8_t number_of_cycles_before_break = chop_profile_selected[2];
+    uint8_t time_to_brake = chop_profile_selected[3];
 
     currentMillis = HAL_GetTick();
 
@@ -1437,7 +1472,7 @@ void Activate_ChopRoutine(void)
 
     case CHOP_ACCELERATING:
 
-        if (currentMillis - acceleration_start_ms > time_to_accelerate[chop_profile] * 1000)
+        if (currentMillis - acceleration_start_ms > time_to_accelerate * 1000)
         {
             CT_signal = SIGNAL_OPEN;
             FE_signal = SIGNAL_UNINTERFERED;
@@ -1448,11 +1483,11 @@ void Activate_ChopRoutine(void)
 
     case CHOP_DECELERATING:
 
-        if (currentMillis - deceleration_start_ms > time_to_decelerate[chop_profile] * 1000)
+        if (currentMillis - deceleration_start_ms > time_to_decelerate * 1000)
         {
             cycles_run++;
 
-            if (cycles_run == number_of_cycles_before_break[chop_profile])
+            if (cycles_run == number_of_cycles_before_break)
             {
                 cycles_run = 0;
                 CT_signal = SIGNAL_OPEN;
@@ -1468,7 +1503,7 @@ void Activate_ChopRoutine(void)
         break;
 
     case CHOP_BRAKING:
-        if (currentMillis - brake_start_ms > time_to_brake[chop_profile] * 1000)
+        if (currentMillis - brake_start_ms > time_to_brake * 1000)
         {
             chop_state = CHOP_READY_TO_START;
         }
