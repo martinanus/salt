@@ -64,8 +64,8 @@ UART_HandleTypeDef huart3;
 
 salt_mode_t salt_mode = MODO_NORMAL;
 
-uint8_t command_validity = COMMAND_VALIDITY_INITIAL;
-uint8_t speed_configs[4] = SPEED_CONFIG_INITIAL;
+uint8_t command_validity_s = COMMAND_VALIDITY_INITIAL;
+uint8_t speed_configs[4]   = SPEED_CONFIG_INITIAL;
 uint8_t chop_profile_config[5][4] = {
     CHOP_PROFILE_1_INITIAL,
     CHOP_PROFILE_2_INITIAL,
@@ -153,6 +153,7 @@ switch_state_t MAT_switch_state_2 = SWITCH_OFF;
 
 char remote_command_buffer[MAX_COMMAND_LENGTH];
 command_states_t remote_command_active;
+uint32_t remote_command_Millis = 0;
 
 char local_command_buffer[MAX_COMMAND_LENGTH];
 command_states_t local_command_active;
@@ -679,12 +680,12 @@ void Handle_SaltMode_Transition(void)
         {
             Activate_Buzzer();
             Activate_SISBypass();
-            Log_Event("MODO_NORMAL --> MODO_TOTAL");
+            Log_Event("MODO_NORMAL-->MODO_TOTAL");
         }
         else if (salt_mode == MODO_LIMITADO)
         {
             HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_NORMAL);
-            Log_Event("MODO_LIMITADO --> MODO_TOTAL");
+            Log_Event("MODO_LIMITADO-->MODO_TOTAL");
         }
         salt_mode = MODO_TOTAL;
     }
@@ -695,12 +696,12 @@ void Handle_SaltMode_Transition(void)
             Activate_Buzzer();
             Activate_SISBypass();
             HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_ENERGIZED);
-            Log_Event("MODO_NORMAL --> MODO_LIMITADO");
+            Log_Event("MODO_NORMAL-->MODO_LIMITADO");
         }
         else if (salt_mode == MODO_TOTAL)
         {
             HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_ENERGIZED);
-            Log_Event("MODO_TOTAL --> MODO_LIMITADO");
+            Log_Event("MODO_TOTAL-->MODO_LIMITADO");
         }
         salt_mode = MODO_LIMITADO;
     }
@@ -711,13 +712,13 @@ void Handle_SaltMode_Transition(void)
             Deactivate_Buzzer();
             Deactivate_SISBypass();
             HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_NORMAL);
-            Log_Event("MODO_LIMITADO --> MODO_NORMAL");
+            Log_Event("MODO_LIMITADO-->MODO_NORMAL");
         }
         else if (salt_mode == MODO_TOTAL)
         {
             Deactivate_Buzzer();
             Deactivate_SISBypass();
-            Log_Event("MODO_TOTAL --> MODO_NORMAL");
+            Log_Event("MODO_TOTAL-->MODO_NORMAL");
         }
         salt_mode = MODO_NORMAL;
     }
@@ -746,6 +747,7 @@ void Read_MATSwitchState(void)
 
 void Read_RemoteCommand(void)
 {
+    uint32_t currentMillis;
     char command[MAX_COMMAND_LENGTH];
     if (WIFInew_line)
     {
@@ -753,29 +755,38 @@ void Read_RemoteCommand(void)
         sprintf(remote_command_buffer, WIFIline);
         sscanf(remote_command_buffer, "%[^:]", command);
 
-        if (strcmp(command, "DATETIME") == 0)
-        {
-            Update_RTCDateTime(remote_command_buffer + strlen(command) + 1);
-        }
-        else if (strcmp(command, "AISLADO_TOTAL") == 0)
+        if (strcmp(command, "AISLADO_TOTAL") == 0)
         {
             // TO BE IMPLEMENTED
+            remote_command_active = COMMAND_ACTIVE;
+            remote_command_Millis = HAL_GetTick();
         }
         else if (strcmp(command, "PARADA_TOTAL") == 0)
         {
             // TO BE IMPLEMENTED
+            remote_command_active = COMMAND_ACTIVE;
+            remote_command_Millis = HAL_GetTick();
         }
         else if (strcmp(command, "COCHE_DERIVA") == 0)
         {
             // TO BE IMPLEMENTED
+            remote_command_active = COMMAND_ACTIVE;
+            remote_command_Millis = HAL_GetTick();
         }
         else if (strcmp(command, "INTERMITENTE") == 0)
         {
             // TO BE IMPLEMENTED
+            remote_command_active = COMMAND_ACTIVE;
+            remote_command_Millis = HAL_GetTick();
         }
         else if (strcmp(command, "CANCEL") == 0)
         {
-            // TO BE IMPLEMENTED
+            remote_command_active = COMMAND_INACTIVE;
+            Log_Event("REMOTE_COMMANDS_CANCELED");
+        }
+        else if (strcmp(command, "DATETIME") == 0)
+        {
+            Update_RTCDateTime(remote_command_buffer + strlen(command) + 1);
         }
         else if (strcmp(command, "COMMAND_VALIDITY_CONFIG") == 0)
         {
@@ -790,13 +801,15 @@ void Read_RemoteCommand(void)
         {
         }
 
+        // TO BE IMPLEMENTED - SEND CONFIRMATION MSG
         WIFInew_line = 0;
     }
     else
     {
-        // TO BE IMPLEMENTED
-        // Apply some delay for valid command
-        remote_command_active = COMMAND_INACTIVE;
+        currentMillis = HAL_GetTick();
+        if (currentMillis - remote_command_Millis > command_validity_s * 1000){
+            remote_command_active = COMMAND_INACTIVE;
+        }        
     }
 }
 
@@ -829,8 +842,8 @@ void Update_CommandValidity(char *command)
 
     if (sscanf(command, "%hhu", &extracted_number) == 1)
     {
-        command_validity = extracted_number;
-        sprintf(local_log_buffer, "COMMAND_VALIDITY: %d", command_validity);
+        command_validity_s = extracted_number;
+        sprintf(local_log_buffer, "COMMAND_VALIDITY: %d", command_validity_s);
         Log_Event(local_log_buffer);
     }
 }
@@ -862,7 +875,7 @@ void Update_ChopConfig(char *command)
 
 void Read_LocalCommand(void)
 {
-    // TO BE IMPLEMENTED - this is get by uart3? USB OTG? what are the commands?
+    // TO BE IMPLEMENTED - this is get by uart3? USB OTG? what are the commands? downoload logs only?
     local_command_active = COMMAND_ACTIVE;
     sprintf(local_command_buffer, "myLocCom");
 }
@@ -1144,7 +1157,7 @@ void setDigit6_regValue()
     uint8_t D4_C = extractBit(SIS_leds[3], 1); // LED10_GREEN - CC_6 - A_C  - SIS_4
     uint8_t D3_D = extractBit(SIS_leds[4], 1); // LED11_GREEN - CC_6 - A_D  - SIS_5
     uint8_t D2_E = 0;                          // NC          - CC_6 - A_E  - NC
-    uint8_t D1_F = extractBit(SIS_leds[0], 0); // LED7_BLUE   - CC_6 - A_F  - SIS_1 --> ZONA
+    uint8_t D1_F = extractBit(SIS_leds[0], 0); // LED7_BLUE   - CC_6 - A_F  - SIS_1-->ZONA
     uint8_t D0_G = chop_profile_leds[3];       // LED17       - CC_6 - A_G  - CHOP_4
 
     uint8_t vars[8] = {D0_G, D1_F, D2_E, D3_D, D4_C, D5_B, D6_A, D7_DP};
@@ -1423,7 +1436,7 @@ void Set_CriticalSignals_State(void)
     uint8_t speed_limit_to_decelerate = speed_configs[0]; // km/h
     uint8_t speed_limit_to_accelerate = speed_configs[1]; // km/h
     uint8_t speed_limit_to_brake = speed_configs[2];      // km/h
-    uint8_t time_to_brake_s = speed_configs[3];           // s --> thold = 30s
+    uint8_t time_to_brake_s = speed_configs[3];           // s-->thold = 30s
 
     prev_CT_signal = CT_signal;
     prev_FE_signal = FE_signal;
