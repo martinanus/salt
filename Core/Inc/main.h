@@ -373,6 +373,11 @@ extern "C"
 #define ZONE_READ_VALIDITY_S 60   // s
 #define KNOT_TO_KM_H_FACTOR 1.852 // multiplier factor
 
+#define DD_LAT_ORIGIN_POINT -34.587174 // Latitude for Retiro train station
+#define DD_LON_ORIGIN_POINT -58.383134 // Longitude Retiro train station
+#define DISTANCE_LIMIT_ZONE_1 10       // Distance in straight line from origin point
+#define DISTANCE_LIMIT_ZONE_2 40       // Distance in straight line from origin point
+
 #define REG_MODO_LIMITADO_C_Pin REG_1_C_Pin
 #define REG_MODO_LIMITADO_C_GPIO_Port REG_1_C_GPIO_Port
 #define REG_POWER_OK_C_Pin REG_2_C_Pin

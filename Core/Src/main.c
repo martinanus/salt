@@ -100,6 +100,9 @@ struct GPRMC gprms = {
     .status = '\0',
     .speed = 0,
     .checksum = ""};
+
+dd_location_d origin_point = {DD_LAT_ORIGIN_POINT, DD_LON_ORIGIN_POINT};
+
 FATFS fs;
 const char *local_log_file_name = "registro.txt";
 const char *log_timestamp = "2024-05-15 12:34:56";
@@ -548,14 +551,28 @@ void Read_GPSSpeed(void)
 
 void Read_CurrentZone(void)
 {
+    double distance_from_origin;
+    dd_location_d current_point;
     uint32_t currentMillis;
     prev_zone = current_zone;
 
     if (gprms.status == 'A')
     {
-        current_zone = ZONE_1;
-        // TO BE IMPLEMENTED
-        // using gprms.latitude  gprms.longitude to calculate distance from origin point
+        current_point = convert_dms_to_decimal(gprms.latitude, gprms.longitude);
+        distance_from_origin = haversine_distance(current_point, origin_point);
+
+        if (distance_from_origin > DISTANCE_LIMIT_ZONE_2)
+        {
+            current_zone = ZONE_3;
+        }
+        else if (distance_from_origin > DISTANCE_LIMIT_ZONE_1)
+        {
+            current_zone = ZONE_2;
+        }
+        else
+        {
+            current_zone = ZONE_1;
+        }
     }
     else
     {

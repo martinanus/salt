@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "gps.h"
 
 void parse_GPRMC(const char *line, struct GPRMC *data)
@@ -179,73 +180,39 @@ void print_GPRMC(struct GPRMC *data)
 	printf("checksum:   %s\r\n", data->checksum);
 }
 
-/*
-void transmit_GPRMC(UART_HandleTypeDef *huart, struct GPRMC *data)
+double
+dms_to_decimal(dms_coordinates_t coordinate)
 {
-		char txBuffer[MAX_STRING_LENGTH];
-		// Access the struct members and do something with them
-		sprintf(txBuffer, "Log header: %s\r\n", data->log_header);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "status:     %c\r\n", data->status);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "LATITUDE\r\n");
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "   deg:     %i\r\n", data->latitude.degrees);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "   min:     %i\r\n", data->latitude.minutes);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "   sec:     %i\r\n", data->latitude.seconds);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "   dir:     %c\r\n", data->latitude.direction);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "LONGITUDE\r\n");
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "   deg:     %i\r\n", data->longitude.degrees);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "   min:     %i\r\n", data->longitude.minutes);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "   sec:     %i\r\n", data->longitude.seconds);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "   dir:     %c\r\n", data->longitude.direction);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "DATETIME\r\n");
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "   year:    %i\r\n", data->datetime.year);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "   month:   %i\r\n", data->datetime.month);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "   day:     %i\r\n", data->datetime.day);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "   hrs:     %i\r\n", data->datetime.hours);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "   min:     %i\r\n", data->datetime.minutes);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "   sec:     %f\r\n", data->datetime.seconds);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "speed:      %f\r\n", data->speed);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
-		sprintf(txBuffer, "checksum:   %s\r\n", data->checksum);
-		HAL_UART_Transmit(huart, (uint8_t *)txBuffer, strlen(txBuffer), 1000);
-
+	double decimal = coordinate.degrees + (coordinate.degrees / 60.0) + (coordinate.degrees / 3600.0);
+	if (coordinate.direction == 'S' || coordinate.degrees == 'W')
+	{
+		decimal = -decimal;
+	}
+	return decimal;
 }
-*/
+
+dd_location_d
+convert_dms_to_decimal(dms_coordinates_t coordinate1, dms_coordinates_t coordinate2)
+{
+	dd_location_d dd_point;
+	dd_point.latitude = dms_to_decimal(coordinate1);
+	dd_point.longitude = dms_to_decimal(coordinate2);
+
+	return dd_point;
+}
+
+double
+haversine_distance(dd_location_d point1, dd_location_d point2)
+{
+	double dlat = (point2.latitude - point1.latitude) * M_PI / 180.0;
+	double dlon = (point2.longitude - point2.latitude) * M_PI / 180.0;
+
+	double a = sin(dlat / 2) * sin(dlat / 2) +
+			   cos(point1.latitude * M_PI / 180.0) * cos(point2.longitude * M_PI / 180.0) *
+				   sin(dlon / 2) * sin(dlon / 2);
+
+	double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+	double distance = RADIUS_EARTH * c;
+	return distance;
+}
