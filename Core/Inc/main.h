@@ -41,7 +41,10 @@ extern "C"
     {
         MODO_NORMAL = 0,
         MODO_LIMITADO = 1,
-        MODO_TOTAL = 2
+        MODO_TOTAL = 2,
+        MODO_PARADA = 3,
+        MODO_COCHE_DERIVA = 4,
+        MODO_INTERMITENTE = 5
     } salt_mode_t;
 
     typedef enum

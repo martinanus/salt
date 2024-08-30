@@ -63,9 +63,10 @@ UART_HandleTypeDef huart3;
 /* USER CODE BEGIN PV */
 
 salt_mode_t salt_mode = MODO_NORMAL;
+salt_mode_t prev_salt_mode;
 
 uint8_t command_validity_s = COMMAND_VALIDITY_INITIAL;
-uint8_t speed_configs[4]   = SPEED_CONFIG_INITIAL;
+uint8_t speed_configs[4] = SPEED_CONFIG_INITIAL;
 uint8_t chop_profile_config[5][4] = {
     CHOP_PROFILE_1_INITIAL,
     CHOP_PROFILE_2_INITIAL,
@@ -228,6 +229,7 @@ void Update_RTCDateTime(char *command);
 void Update_CommandValidity(char *command);
 void Update_SpeedConfig(char *command);
 void Update_ChopConfig(char *command);
+void Update_ChopProfile(char *command);
 void Read_LocalCommand(void);
 void Display_SystemStatus(void);
 void Build_SystemStatus(void);
@@ -671,56 +673,65 @@ void Read_SISStatus(void)
 
 void Handle_SaltMode_Transition(void)
 {
+    prev_salt_mode = salt_mode;
 
     Read_ActivationSwitchState();
+    Read_RemoteCommand();
 
-    if (MAT_switch_state_1 == SWITCH_ON && MAT_switch_state_2 == SWITCH_ON)
+    if (remote_command_active == COMMAND_ACTIVE)
     {
-        if (salt_mode == MODO_NORMAL)
+        if (strcmp(remote_command_buffer, "AISLADO_TOTAL") == 0)
         {
-            Activate_Buzzer();
-            Activate_SISBypass();
-            Log_Event("MODO_NORMAL-->MODO_TOTAL");
+            salt_mode = MODO_TOTAL;
         }
-        else if (salt_mode == MODO_LIMITADO)
+        else if (strcmp(remote_command_buffer, "PARADA_TOTAL") == 0)
         {
-            HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_NORMAL);
-            Log_Event("MODO_LIMITADO-->MODO_TOTAL");
+            salt_mode = MODO_PARADA;
         }
-        salt_mode = MODO_TOTAL;
-    }
-    else if (MAL_switch_state_1 == SWITCH_ON && MAL_switch_state_2 == SWITCH_ON)
-    {
-        if (salt_mode == MODO_NORMAL)
+        else if (strcmp(remote_command_buffer, "COCHE_DERIVA") == 0)
         {
-            Activate_Buzzer();
-            Activate_SISBypass();
-            HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_ENERGIZED);
-            Log_Event("MODO_NORMAL-->MODO_LIMITADO");
+            salt_mode = MODO_COCHE_DERIVA;
         }
-        else if (salt_mode == MODO_TOTAL)
+        else if (strncmp(remote_command_buffer, "INTERMITENTE", 12) == 0)
         {
-            HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_ENERGIZED);
-            Log_Event("MODO_TOTAL-->MODO_LIMITADO");
+            salt_mode = MODO_INTERMITENTE;
         }
-        salt_mode = MODO_LIMITADO;
     }
     else
     {
+        if (MAT_switch_state_1 == SWITCH_ON && MAT_switch_state_2 == SWITCH_ON)
+        {
+            salt_mode = MODO_TOTAL;
+        }
+        else if (MAL_switch_state_1 == SWITCH_ON && MAL_switch_state_2 == SWITCH_ON)
+        {
+            salt_mode = MODO_LIMITADO;
+        }
+        else
+        {
+            salt_mode = MODO_NORMAL;
+        }
+    }
+
+    if (salt_mode != prev_salt_mode)
+    {
+
+        if (prev_salt_mode == MODO_LIMITADO)
+        {
+            Deactivate_SISBypass();
+            Deactivate_Buzzer();
+            HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_NORMAL);
+        }
+
         if (salt_mode == MODO_LIMITADO)
         {
-            Deactivate_Buzzer();
-            Deactivate_SISBypass();
-            HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_NORMAL);
-            Log_Event("MODO_LIMITADO-->MODO_NORMAL");
+            Activate_Buzzer();
+            Activate_SISBypass();
+            HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_ENERGIZED);
         }
-        else if (salt_mode == MODO_TOTAL)
-        {
-            Deactivate_Buzzer();
-            Deactivate_SISBypass();
-            Log_Event("MODO_TOTAL-->MODO_NORMAL");
-        }
-        salt_mode = MODO_NORMAL;
+
+        sprintf(local_log_buffer, "SALT_MODE_TRANSITION: %u --> %u", prev_salt_mode, salt_mode);
+        Log_Event(local_log_buffer);
     }
 }
 
@@ -757,25 +768,22 @@ void Read_RemoteCommand(void)
 
         if (strcmp(command, "AISLADO_TOTAL") == 0)
         {
-            // TO BE IMPLEMENTED
             remote_command_active = COMMAND_ACTIVE;
             remote_command_Millis = HAL_GetTick();
         }
         else if (strcmp(command, "PARADA_TOTAL") == 0)
         {
-            // TO BE IMPLEMENTED
             remote_command_active = COMMAND_ACTIVE;
             remote_command_Millis = HAL_GetTick();
         }
         else if (strcmp(command, "COCHE_DERIVA") == 0)
         {
-            // TO BE IMPLEMENTED
             remote_command_active = COMMAND_ACTIVE;
             remote_command_Millis = HAL_GetTick();
         }
         else if (strcmp(command, "INTERMITENTE") == 0)
         {
-            // TO BE IMPLEMENTED
+            Update_ChopProfile(remote_command_buffer + strlen(command) + 1);
             remote_command_active = COMMAND_ACTIVE;
             remote_command_Millis = HAL_GetTick();
         }
@@ -796,9 +804,9 @@ void Read_RemoteCommand(void)
         {
             Update_SpeedConfig(remote_command_buffer + strlen(command) + 1);
         }
-        else if (strcmp(command, "INTERMITENTE_CONFIG") == 0)
-            Update_ChopConfig(remote_command_buffer + strlen(command) + 1);
+        else if (strcmp(command, "INTERMITENTE_CONFIG") == 0)            
         {
+            Update_ChopConfig(remote_command_buffer + strlen(command) + 1);
         }
 
         // TO BE IMPLEMENTED - SEND CONFIRMATION MSG
@@ -807,9 +815,10 @@ void Read_RemoteCommand(void)
     else
     {
         currentMillis = HAL_GetTick();
-        if (currentMillis - remote_command_Millis > command_validity_s * 1000){
+        if (currentMillis - remote_command_Millis > command_validity_s * 1000)
+        {
             remote_command_active = COMMAND_INACTIVE;
-        }        
+        }
     }
 }
 
@@ -870,6 +879,18 @@ void Update_ChopConfig(char *command)
         memcpy(chop_profile_config[profile], chop_parameters, sizeof(chop_profile_config[profile]));
         sprintf(local_log_buffer, "CHOP_CONFIG_PROF_%u: %u,%u,%u,%u", profile, chop_parameters[0], chop_parameters[1], chop_parameters[2], chop_parameters[3]);
         Log_Event(local_log_buffer);
+    }
+}
+
+void Update_ChopProfile(char *command)
+{
+    uint8_t profile;    
+
+    if (sscanf(command, "%hhu", &profile) == 1)
+    {
+        if (profile < 5){
+            chop_profile = profile;
+        }
     }
 }
 
@@ -1263,6 +1284,8 @@ void Transmit_RemoteEvents(const char *buffer)
 
 void Activate_Buzzer(void)
 {
+    // TO BE IMPLEMENTED - This should be intermitent signal in MODO LIMITADO
+    // AND CONTINUOS WHEN IT EXCEED SPEED LIMIT
     HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, BUZZER_ON);
 }
 
@@ -1441,7 +1464,12 @@ void Set_CriticalSignals_State(void)
     prev_CT_signal = CT_signal;
     prev_FE_signal = FE_signal;
 
-    if (salt_mode == MODO_LIMITADO)
+    if (salt_mode == MODO_NORMAL)
+    {
+        CT_signal = SIGNAL_UNINTERFERED;
+        FE_signal = SIGNAL_UNINTERFERED;
+    }        
+    else if (salt_mode == MODO_LIMITADO)
     {
 
         if (speed_source != SPEED_NONE)
@@ -1477,11 +1505,26 @@ void Set_CriticalSignals_State(void)
             Activate_ChopRoutine();
         }
     }
-    else
+    else if (salt_mode == MODO_TOTAL)
     {
-        CT_signal = SIGNAL_UNINTERFERED;
-        FE_signal = SIGNAL_UNINTERFERED;
+        CT_signal = SIGNAL_BYPASSED;
+        FE_signal = SIGNAL_BYPASSED;
     }
+    else if (salt_mode == MODO_PARADA)
+    {
+        CT_signal = SIGNAL_OPEN;
+        FE_signal = SIGNAL_OPEN;
+    }
+    else if (salt_mode == MODO_COCHE_DERIVA)
+    {
+        CT_signal = SIGNAL_OPEN;
+        FE_signal = SIGNAL_BYPASSED;
+    }
+    else if (salt_mode == MODO_INTERMITENTE)
+    {
+        Activate_ChopRoutine();
+    }
+    
 }
 
 void Activate_ChopRoutine(void)
@@ -1582,7 +1625,6 @@ void Control_CTsignal(void)
     }
     else if (CT_signal == SIGNAL_BYPASSED)
     {
-        // This status should not be used if SIS_BYPASS reenables IN signal continuity
         HAL_GPIO_WritePin(CT_DES_1_GPIO_Port, CT_DES_1_Pin, RELAY_ENERGIZED);
         HAL_GPIO_WritePin(CT_DES_2_GPIO_Port, CT_DES_2_Pin, RELAY_NORMAL);
         HAL_GPIO_WritePin(CT_C_GPIO_Port, CT_C_Pin, RELAY_NORMAL);
@@ -1741,7 +1783,7 @@ int main(void)
         Display_SystemStatus();
         Set_CriticalSignals_State();
         Control_CriticalSignals();
-        Read_RemoteCommand();
+
         // ExecuteRemoteCommands
         // ExecuteLocalCommands
 
