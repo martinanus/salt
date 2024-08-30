@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "ff.h"
+#include "sd.h"
 
 void mount_filesystem(FATFS *fs)
 {
@@ -21,7 +22,7 @@ void list_root_files(void)
     FILINFO fno;
     DIR dir;
     char *path = ""; // Root directory
-    char buffer[256];
+    char buffer[MAX_BUFF_SIZE];
 
     // Open the root directory
     res = f_opendir(&dir, path);
@@ -85,5 +86,31 @@ void write_in_file(const char *filename, const char *buffer)
     else
     {
         printf("Error opening the file in the SD CARD\n");
+    }
+}
+
+void read_file_line_by_line(const char *filename, UART_HandleTypeDef * uart_handle)
+{
+    FIL file;    
+    FRESULT res; 
+    char line[MAX_BUFF_SIZE]; 
+    
+    res = f_open(&file, filename, FA_READ);
+    if (res == FR_OK)
+    {
+        
+        while (f_gets(line, sizeof(line), &file))
+        {
+            HAL_UART_Transmit(uart_handle, (uint8_t *)line, strlen(line), HAL_MAX_DELAY);
+        }
+        
+        if (f_close(&file) != FR_OK)
+        {
+            printf("Error closing the file in the SD CARD\n");
+        }
+    }
+    else
+    {
+        printf("Error opening the file in the SD CARD for reading, error code: %d\n", res);
     }
 }

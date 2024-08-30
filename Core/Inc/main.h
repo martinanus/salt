@@ -352,6 +352,7 @@ extern "C"
 
     /* USER CODE BEGIN Private defines */
 
+#define LOCAL_SERIAL_UART_HANDLE huart3
 #define WIFI_UART_HANDLE huart4
 #define GPS_UART_HANDLE huart5
 #define RS485_1_UART_HANDLE huart7
@@ -370,6 +371,7 @@ extern "C"
 
 #define MAX_LOG_LENGTH 256
 #define MAX_COMMAND_LENGTH 256
+#define MAX_BUFFER_LENGTH 256
 #define BTN_DEBOUNCE_MS 100
 
 #define SPEED_STOP 0.5            // km/h

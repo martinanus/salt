@@ -75,32 +75,38 @@ uint8_t chop_profile_config[5][4] = {
     CHOP_PROFILE_5_INITIAL,
 };
 
-char WIFIrxBuff[100];
-char WIFIline[100];
+char WIFIrxBuff[MAX_BUFFER_LENGTH];
+char WIFIline[MAX_BUFFER_LENGTH];
 uint8_t WIFIcharRead;
 uint8_t WIFIidx;
 uint8_t WIFInew_line;
 
-char GPSrxBuff[100];
-char GPSline[100];
+char GPSrxBuff[MAX_COMMAND_LENGTH];
+char GPSline[MAX_BUFFER_LENGTH];
 uint8_t GPScharRead;
 uint8_t GPSidx;
 uint8_t GPSnew_line;
 uint32_t gps_dataMillis = 0;
 
-char rs485_1_rxBuff[100];
-char rs485_1_line[100];
+char rs485_1_rxBuff[MAX_BUFFER_LENGTH];
+char rs485_1_line[MAX_BUFFER_LENGTH];
 uint8_t rs485_1_charRead;
 uint8_t rs485_1_idx;
 uint8_t rs485_1_new_line;
 uint32_t rs485_1_dataMillis = 0;
 
-char rs485_2_rxBuff[100];
-char rs485_2_line[100];
+char rs485_2_rxBuff[MAX_BUFFER_LENGTH];
+char rs485_2_line[MAX_BUFFER_LENGTH];
 uint8_t rs485_2_charRead;
 uint8_t rs485_2_idx;
 uint8_t rs485_2_new_line;
 uint32_t rs485_2_dataMillis = 0;
+
+char localSerial_rxBuff[MAX_BUFFER_LENGTH];
+char localSerial_line[MAX_BUFFER_LENGTH];
+uint8_t localSerial_charRead;
+uint8_t localSerial_idx;
+uint8_t localSerial_new_line;
 
 char GPSsentence[] = {"$GPRMC"};
 struct GPRMC gprms = {
@@ -116,7 +122,6 @@ dd_location_d origin_point = {DD_LAT_ORIGIN_POINT, DD_LON_ORIGIN_POINT};
 
 FATFS fs;
 const char *local_log_file_name = "registro.txt";
-const char *log_timestamp = "2024-05-15 12:34:56";
 
 volatile uint16_t adc_results_dma[10];
 volatile uint8_t ADC_ConvCplt = 0;
@@ -155,9 +160,6 @@ switch_state_t MAT_switch_state_2 = SWITCH_OFF;
 char remote_command_buffer[MAX_COMMAND_LENGTH];
 command_states_t remote_command_active;
 uint32_t remote_command_Millis = 0;
-
-char local_command_buffer[MAX_COMMAND_LENGTH];
-command_states_t local_command_active;
 
 // RGB
 rgb_led_state_t zone_led;
@@ -381,6 +383,30 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         rs485_2_charRead = 0;
         HAL_UART_Receive_IT(&RS485_2_UART_HANDLE, &rs485_2_charRead, 1);
     }
+    else if (huart->Instance == LOCAL_SERIAL_UART_HANDLE.Instance)
+    {
+        {
+            if (localSerial_charRead == '\r' || localSerial_charRead == '\n')
+            {
+                if (localSerial_idx > 0)
+                {
+                    memcpy(localSerial_line, localSerial_rxBuff, localSerial_idx);
+                    localSerial_line[localSerial_idx] = '\0';
+                    localSerial_new_line = 1;
+                    localSerial_rxBuff[0] = '\0';
+                    localSerial_idx = 0;                
+                    // printf("localSerial: %s\r\n", localSerial_line);
+                }
+            }
+            else
+            {
+                localSerial_rxBuff[localSerial_idx++] = localSerial_charRead;
+            }
+
+            localSerial_charRead = 0;
+            HAL_UART_Receive_IT(&LOCAL_SERIAL_UART_HANDLE, &localSerial_charRead, 1);
+        }
+}
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
@@ -488,6 +514,8 @@ void Read_Speed(void)
         sprintf(local_log_buffer, "SPEED_SOURCE: %d", speed_source);
         Log_Event(local_log_buffer);
     }
+    // TO BE IMPLEMENTED - SET FREQ FOR THIS
+    // Using timer or freeRTOS
     // if (speed_source != SPEED_NONE){
     //   sprintf(local_log_buffer, "SPEED: %.2f", speed);
     //   Log_Event(local_log_buffer);
@@ -803,9 +831,15 @@ void Read_RemoteCommand(void)
         {
             Update_SpeedConfig(remote_command_buffer + strlen(command) + 1);
         }
-        else if (strcmp(command, "INTERMITENTE_CONFIG") == 0)            
+        else if (strcmp(command, "INTERMITENTE_CONFIG") == 0)
         {
             Update_ChopConfig(remote_command_buffer + strlen(command) + 1);
+        } 
+        else if (strcmp(command, "DOWNLOAD_LOGS") == 0)
+        {
+            Log_Event("REMOTE_LOG_DOWNLOAD_START");
+            read_file_line_by_line(local_log_file_name, &WIFI_UART_HANDLE);
+            Log_Event("REMOTE_LOG_DOWNLOAD_FINISH");
         }
 
         // TO BE IMPLEMENTED - SEND CONFIRMATION MSG
@@ -883,11 +917,12 @@ void Update_ChopConfig(char *command)
 
 void Update_ChopProfile(char *command)
 {
-    uint8_t profile;    
+    uint8_t profile;
 
     if (sscanf(command, "%hhu", &profile) == 1)
     {
-        if (profile < 5){
+        if (profile < 5)
+        {
             chop_profile = profile;
         }
     }
@@ -895,9 +930,17 @@ void Update_ChopProfile(char *command)
 
 void Read_LocalCommand(void)
 {
-    // TO BE IMPLEMENTED - this is get by uart3? USB OTG? what are the commands? downoload logs only?
-    local_command_active = COMMAND_ACTIVE;
-    sprintf(local_command_buffer, "myLocCom");
+
+    if (localSerial_new_line)
+    {
+        if (strcmp(localSerial_line, "DOWNLOAD_LOGS") == 0){
+            Log_Event("LOCAL_LOG_DOWNLOAD_START");
+            read_file_line_by_line(local_log_file_name, &LOCAL_SERIAL_UART_HANDLE);
+            Log_Event("LOCAL_LOG_DOWNLOAD_FINISH");
+        }
+        
+        localSerial_new_line = 0;
+    }    
 }
 
 void Display_SystemStatus(void)
@@ -1252,21 +1295,28 @@ void Activate_ZoneRelay(void)
     }
 }
 
-void Control_Buzzer(void){
+void Control_Buzzer(void)
+{
     static uint32_t buzzer_toggle_ms = 0;
     uint32_t currentMillis;
 
-    if (buzzer_state == BUZZER_OFF){
+    if (buzzer_state == BUZZER_OFF)
+    {
         HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, 0);
-    } else if (buzzer_state == BUZZER_ON_CONTINUOS){
+    }
+    else if (buzzer_state == BUZZER_ON_CONTINUOS)
+    {
         HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, 1);
-    }else if (buzzer_state == BUZZER_ON_INTERMITENT){
+    }
+    else if (buzzer_state == BUZZER_ON_INTERMITENT)
+    {
         currentMillis = HAL_GetTick();
-        if (currentMillis - buzzer_toggle_ms > BUZZER_SOUND_PERIOD_S * 1000){
+        if (currentMillis - buzzer_toggle_ms > BUZZER_SOUND_PERIOD_S * 1000)
+        {
             HAL_GPIO_TogglePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin);
             buzzer_toggle_ms = currentMillis;
-        }        
-    }    
+        }
+    }
 }
 
 void Log_Event(const char *event)
@@ -1383,6 +1433,7 @@ void Reset_GPS_Power(void)
     HAL_GPIO_Init(GPS_PW_ON_GPIO_Port, &GPIO_InitStruct);
 
     // TO BE IMPLEMENTED - check if this can be async delay
+    // Using timer or freeRTOS
     HAL_Delay(300);
 
     GPIO_InitStruct.Pin = GPS_PW_ON_Pin;
@@ -1475,7 +1526,7 @@ void Set_CriticalSignals_State(void)
     {
         CT_signal = SIGNAL_UNINTERFERED;
         FE_signal = SIGNAL_UNINTERFERED;
-    }        
+    }
     else if (salt_mode == MODO_LIMITADO)
     {
 
@@ -1533,7 +1584,6 @@ void Set_CriticalSignals_State(void)
     {
         Activate_ChopRoutine();
     }
-    
 }
 
 void Activate_ChopRoutine(void)
@@ -1764,6 +1814,9 @@ int main(void)
     HAL_GPIO_WritePin(RS485_2_DIR_GPIO_Port, RS485_2_DIR_Pin, GPIO_PIN_RESET);
     HAL_UART_Receive_IT(&RS485_1_UART_HANDLE, &rs485_1_charRead, 1);
     HAL_UART_Receive_IT(&RS485_2_UART_HANDLE, &rs485_2_charRead, 1);
+
+    // Start local serial communication
+    HAL_UART_Receive_IT(&LOCAL_SERIAL_UART_HANDLE, &localSerial_charRead, 1);
 
     // Start first ADC conversion
     HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t *)adc_results_dma, adcChannelCount);
