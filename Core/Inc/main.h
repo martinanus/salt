@@ -150,7 +150,8 @@ extern "C"
     typedef enum
     {
         BUZZER_OFF = 0,
-        BUZZER_ON = 1
+        BUZZER_ON_INTERMITENT = 1,
+        BUZZER_ON_CONTINUOS = 2
     } buzzer_state_t;
 
     typedef enum
@@ -375,6 +376,7 @@ extern "C"
 #define SPEED_READ_VALIDITY_S 2   // s
 #define ZONE_READ_VALIDITY_S 60   // s
 #define KNOT_TO_KM_H_FACTOR 1.852 // multiplier factor
+#define BUZZER_SOUND_PERIOD_S 1   // s
 
 #define DD_LAT_ORIGIN_POINT -34.587174 // Latitude for Retiro train station
 #define DD_LON_ORIGIN_POINT -58.383134 // Longitude Retiro train station

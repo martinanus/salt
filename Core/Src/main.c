@@ -245,8 +245,7 @@ void Send_SystemStatus(void);
 void Activate_ZoneRelay(void);
 void Log_Event(const char *event);
 void Transmit_RemoteEvents(const char *buffer);
-void Activate_Buzzer(void);
-void Deactivate_Buzzer(void);
+void Control_Buzzer(void);
 void Activate_SISBypass(void);
 void Deactivate_SISBypass(void);
 void Reset_GPS_Power(void);
@@ -719,14 +718,14 @@ void Handle_SaltMode_Transition(void)
         if (prev_salt_mode == MODO_LIMITADO)
         {
             Deactivate_SISBypass();
-            Deactivate_Buzzer();
+            buzzer_state = BUZZER_OFF;
             HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_NORMAL);
         }
 
         if (salt_mode == MODO_LIMITADO)
         {
-            Activate_Buzzer();
             Activate_SISBypass();
+            buzzer_state = BUZZER_ON_INTERMITENT;
             HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_ENERGIZED);
         }
 
@@ -1225,6 +1224,9 @@ void Send_SystemStatus(void)
     result = LedDriver_WriteReg(0x06, digit5_reg_value, &I2C_HANDLE);
     result = LedDriver_WriteReg(0x07, digit6_reg_value, &I2C_HANDLE);
     result = LedDriver_WriteReg(0x08, digit7_reg_value, &I2C_HANDLE);
+
+    Activate_ZoneRelay();
+    Control_Buzzer();
 }
 
 void Activate_ZoneRelay(void)
@@ -1248,6 +1250,23 @@ void Activate_ZoneRelay(void)
         sprintf(local_log_buffer, "ZONE_RELAY: %d", zone_relay);
         Log_Event(local_log_buffer);
     }
+}
+
+void Control_Buzzer(void){
+    static uint32_t buzzer_toggle_ms = 0;
+    uint32_t currentMillis;
+
+    if (buzzer_state == BUZZER_OFF){
+        HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, 0);
+    } else if (buzzer_state == BUZZER_ON_CONTINUOS){
+        HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, 1);
+    }else if (buzzer_state == BUZZER_ON_INTERMITENT){
+        currentMillis = HAL_GetTick();
+        if (currentMillis - buzzer_toggle_ms > BUZZER_SOUND_PERIOD_S * 1000){
+            HAL_GPIO_TogglePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin);
+            buzzer_toggle_ms = currentMillis;
+        }        
+    }    
 }
 
 void Log_Event(const char *event)
@@ -1280,18 +1299,6 @@ void Log_Event(const char *event)
 void Transmit_RemoteEvents(const char *buffer)
 {
     HAL_UART_Transmit(&WIFI_UART_HANDLE, (uint8_t *)buffer, strlen(buffer), HAL_MAX_DELAY);
-}
-
-void Activate_Buzzer(void)
-{
-    // TO BE IMPLEMENTED - This should be intermitent signal in MODO LIMITADO
-    // AND CONTINUOS WHEN IT EXCEED SPEED LIMIT
-    HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, BUZZER_ON);
-}
-
-void Deactivate_Buzzer(void)
-{
-    HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, BUZZER_OFF);
 }
 
 void Activate_SISBypass(void)
@@ -1478,6 +1485,7 @@ void Set_CriticalSignals_State(void)
             if (speed > speed_limit_to_decelerate)
             {
                 CT_signal = SIGNAL_OPEN;
+                buzzer_state = BUZZER_ON_CONTINUOS;
             }
             else if (CT_signal == SIGNAL_OPEN &&
                      FE_signal == SIGNAL_UNINTERFERED &&
@@ -1485,6 +1493,7 @@ void Set_CriticalSignals_State(void)
             {
 
                 CT_signal = SIGNAL_UNINTERFERED;
+                buzzer_state = BUZZER_ON_INTERMITENT;
             }
 
             currentMillis = HAL_GetTick();
@@ -1784,7 +1793,6 @@ int main(void)
         Set_CriticalSignals_State();
         Control_CriticalSignals();
 
-        // ExecuteRemoteCommands
         // ExecuteLocalCommands
 
         HAL_Delay(500);
