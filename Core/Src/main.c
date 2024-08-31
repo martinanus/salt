@@ -231,7 +231,7 @@ void Update_RTCDateTime(char *command);
 void Update_CommandValidity(char *command);
 void Update_SpeedConfig(char *command);
 void Update_ChopConfig(char *command);
-void Update_ChopProfile(char *command);
+void Select_ChopProfile(char *command);
 void Read_LocalCommand(void);
 void Display_SystemStatus(void);
 void Build_SystemStatus(void);
@@ -290,7 +290,7 @@ void GPS_UART_Callback(UART_HandleTypeDef *huart)
             GPSnew_line = 1;
             GPSrxBuff[0] = 0;
             gps_dataMillis = HAL_GetTick();
-            // printf("GPS: %s\r\n", GPSline);
+            //printf("GPS: %s\r\n", GPSline);
         }
         else
         {
@@ -311,11 +311,13 @@ void WIFI_UART_Callback(UART_HandleTypeDef *huart)
     {
         if (WIFIidx > 0)
         {
+            /* DEBUG 
             memcpy(WIFIline, WIFIrxBuff, WIFIidx);
             WIFIline[WIFIidx++] = '\r';
             WIFIline[WIFIidx++] = '\n';
             WIFIline[WIFIidx] = '\0';
             WIFInew_line = 1;
+            */
             WIFIrxBuff[0] = '\0';
             WIFIidx = 0;
             // printf("WIFI: %s\r\n", WIFIline);
@@ -394,7 +396,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
                     localSerial_line[localSerial_idx] = '\0';
                     localSerial_new_line = 1;
                     localSerial_rxBuff[0] = '\0';
-                    localSerial_idx = 0;                
+                    
+
+                    // TODO - DELETE THIS - ONLY FOR DEBUG PURPOSES
+                    memcpy(WIFIline, localSerial_line, localSerial_idx+1);
+                    WIFInew_line = 1;
+                    
+                    localSerial_idx = 0;
                     // printf("localSerial: %s\r\n", localSerial_line);
                 }
             }
@@ -810,7 +818,7 @@ void Read_RemoteCommand(void)
         }
         else if (strcmp(command, "INTERMITENTE") == 0)
         {
-            Update_ChopProfile(remote_command_buffer + strlen(command) + 1);
+            Select_ChopProfile(remote_command_buffer + strlen(command) + 1);
             remote_command_active = COMMAND_ACTIVE;
             remote_command_Millis = HAL_GetTick();
         }
@@ -850,7 +858,11 @@ void Read_RemoteCommand(void)
         currentMillis = HAL_GetTick();
         if (currentMillis - remote_command_Millis > command_validity_s * 1000)
         {
-            remote_command_active = COMMAND_INACTIVE;
+            if (remote_command_active == COMMAND_ACTIVE){
+                remote_command_active = COMMAND_INACTIVE;
+                Log_Event("REMOTE_COMMAND_EXPIRED");
+            }
+            
         }
     }
 }
@@ -880,23 +892,26 @@ void Update_RTCDateTime(char *command)
 
 void Update_CommandValidity(char *command)
 {
-    uint8_t extracted_number = 0;
+    int new_command_validity;
 
-    if (sscanf(command, "%hhu", &extracted_number) == 1)
-    {
-        command_validity_s = extracted_number;
-        sprintf(local_log_buffer, "COMMAND_VALIDITY: %d", command_validity_s);
-        Log_Event(local_log_buffer);
-    }
+    sscanf(command, "%d", &new_command_validity);
+
+    command_validity_s = new_command_validity;
+    sprintf(local_log_buffer, "COMMAND_VALIDITY: %d", command_validity_s);
+    Log_Event(local_log_buffer);
 }
 
 void Update_SpeedConfig(char *command)
 {
-    uint8_t speeds[4];
+    int speeds[4];
 
-    if (sscanf(command, "%hhu,%hhu,%hhu,%hhu", &speeds[0], &speeds[1], &speeds[2], &speeds[3]) == 4)
+    if (sscanf(command, "%d,%d,%d,%d", &speeds[0], &speeds[1], &speeds[2], &speeds[3]) == 4)
     {
         memcpy(speed_configs, speeds, sizeof(speed_configs));
+        speed_configs[0] = speeds[0];
+        speed_configs[1] = speeds[1];
+        speed_configs[2] = speeds[2];
+        speed_configs[3] = speeds[3];
         sprintf(local_log_buffer, "SPEED_CONFIG: %u,%u,%u,%u", speeds[0], speeds[1], speeds[2], speeds[3]);
         Log_Event(local_log_buffer);
     }
@@ -904,22 +919,25 @@ void Update_SpeedConfig(char *command)
 
 void Update_ChopConfig(char *command)
 {
-    uint8_t profile;
-    uint8_t chop_parameters[4];
+    int profile;
+    int chop_parameters[4];
 
-    if (sscanf(command, "%hhu,%hhu,%hhu,%hhu,%hhu", &profile, &chop_parameters[0], &chop_parameters[1], &chop_parameters[2], &chop_parameters[3]) == 5)
+    if (sscanf(command, "%d,%d,%d,%d,%d", &profile, &chop_parameters[0], &chop_parameters[1], &chop_parameters[2], &chop_parameters[3]) == 5)
     {
-        memcpy(chop_profile_config[profile], chop_parameters, sizeof(chop_profile_config[profile]));
+        chop_profile_config[profile][0] = chop_parameters[0];
+        chop_profile_config[profile][1] = chop_parameters[1];
+        chop_profile_config[profile][2] = chop_parameters[2];
+        chop_profile_config[profile][3] = chop_parameters[3];
         sprintf(local_log_buffer, "CHOP_CONFIG_PROF_%u: %u,%u,%u,%u", profile, chop_parameters[0], chop_parameters[1], chop_parameters[2], chop_parameters[3]);
         Log_Event(local_log_buffer);
     }
 }
 
-void Update_ChopProfile(char *command)
+void Select_ChopProfile(char *command)
 {
-    uint8_t profile;
+    int profile;
 
-    if (sscanf(command, "%hhu", &profile) == 1)
+    if (sscanf(command, "%d", &profile) == 1)
     {
         if (profile < 5)
         {
@@ -1303,10 +1321,16 @@ void Control_Buzzer(void)
     if (buzzer_state == BUZZER_OFF)
     {
         HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, 0);
+        
+        // TO BE DELETED - This shows buzzer status
+        HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 0);
     }
     else if (buzzer_state == BUZZER_ON_CONTINUOS)
     {
         HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, 1);
+
+        // TO BE DELETED - This shows buzzer status
+        HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 1);
     }
     else if (buzzer_state == BUZZER_ON_INTERMITENT)
     {
@@ -1314,6 +1338,9 @@ void Control_Buzzer(void)
         if (currentMillis - buzzer_toggle_ms > BUZZER_SOUND_PERIOD_S * 1000)
         {
             HAL_GPIO_TogglePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin);
+
+            // TO BE DELETED - This shows buzzer status
+            HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
             buzzer_toggle_ms = currentMillis;
         }
     }
@@ -1605,6 +1632,14 @@ void Activate_ChopRoutine(void)
     uint8_t number_of_cycles_before_break = chop_profile_selected[2];
     uint8_t time_to_brake = chop_profile_selected[3];
 
+    critical_signal_state_t active_state;
+
+    if (salt_mode == MODO_LIMITADO){
+        active_state = SIGNAL_UNINTERFERED;
+    } else {
+        active_state = SIGNAL_BYPASSED;
+    }
+
     currentMillis = HAL_GetTick();
 
     switch (chop_state)
@@ -1616,8 +1651,8 @@ void Activate_ChopRoutine(void)
         break;
 
     case CHOP_READY_TO_START:
-        CT_signal = SIGNAL_UNINTERFERED;
-        FE_signal = SIGNAL_UNINTERFERED;
+        CT_signal = active_state;
+        FE_signal = active_state;
         acceleration_start_ms = HAL_GetTick();
         chop_state = CHOP_ACCELERATING;
         break;
@@ -1627,7 +1662,7 @@ void Activate_ChopRoutine(void)
         if (currentMillis - acceleration_start_ms > time_to_accelerate * 1000)
         {
             CT_signal = SIGNAL_OPEN;
-            FE_signal = SIGNAL_UNINTERFERED;
+            FE_signal = active_state;
             deceleration_start_ms = HAL_GetTick();
             chop_state = CHOP_DECELERATING;
         }
