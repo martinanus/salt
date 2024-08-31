@@ -72,13 +72,8 @@ void parse_GPRMC(const char *line, struct GPRMC *data)
 							LATITUDE_MINUTES_LENGTH);
 					temp_buff[LATITUDE_MINUTES_LENGTH] = '\0';
 					data->latitude.minutes = atoi(temp_buff);
-
-					strncpy(temp_buff,
-							field + LATITUDE_DEGREES_LENGTH +
-								LATITUDE_MINUTES_LENGTH + 1,
-							LATITUDE_SECONDS_LENGTH);
-					temp_buff[LATITUDE_SECONDS_LENGTH] = '\0';
-					data->latitude.seconds = atoi(temp_buff);
+					
+					data->latitude.seconds = 0;
 				}
 
 				break;
@@ -103,13 +98,7 @@ void parse_GPRMC(const char *line, struct GPRMC *data)
 					temp_buff[2] = '\0';
 					data->longitude.minutes = atoi(temp_buff);
 
-					strncpy(temp_buff,
-							field + LONGITUDE_DEGREES_LENGTH +
-								LONGITUDE_MINUTES_LENGTH +
-								1,
-							LONGITUDE_SECONDS_LENGTH);
-					temp_buff[LONGITUDE_SECONDS_LENGTH] = '\0';
-					data->longitude.seconds = atoi(temp_buff);
+					data->longitude.seconds = 0;
 				}
 				break;
 			case 7:
@@ -183,8 +172,8 @@ void print_GPRMC(struct GPRMC *data)
 double
 dms_to_decimal(dms_coordinates_t coordinate)
 {
-	double decimal = coordinate.degrees + (coordinate.degrees / 60.0) + (coordinate.degrees / 3600.0);
-	if (coordinate.direction == 'S' || coordinate.degrees == 'W')
+	double decimal = coordinate.degrees + (coordinate.minutes / 60.0) + (coordinate.seconds / 3600.0);
+	if (coordinate.direction == 'S' || coordinate.direction == 'W')
 	{
 		decimal = -decimal;
 	}
@@ -205,7 +194,7 @@ double
 haversine_distance(dd_location_d point1, dd_location_d point2)
 {
 	double dlat = (point2.latitude - point1.latitude) * M_PI / 180.0;
-	double dlon = (point2.longitude - point2.latitude) * M_PI / 180.0;
+	double dlon = (point2.longitude - point1.longitude) * M_PI / 180.0;
 
 	double a = sin(dlat / 2) * sin(dlat / 2) +
 			   cos(point1.latitude * M_PI / 180.0) * cos(point2.longitude * M_PI / 180.0) *
