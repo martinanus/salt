@@ -56,6 +56,7 @@ uint8_t new_line;
 
 char wifi_rxBuff[100];
 char wifi_line[100];
+char rxData[5];
 uint8_t wifi_charRead;
 uint8_t wifi_idx;
 uint8_t wifi_new_line;
@@ -82,8 +83,13 @@ int _write(int file, char *ptr, int len) {
     return len;
 }
 
+void clearBuffer(char* buffer, size_t size) {
+  memset(buffer, 0, size);
+}
+
 void myUARTCallback(UART_HandleTypeDef *huart)
 {
+	/*
 	  if (wifi_charRead == '\r' || wifi_charRead == '\n'){
 		  if (wifi_idx > 0){
 			  memcpy(wifi_line, wifi_rxBuff, wifi_idx);
@@ -97,8 +103,13 @@ void myUARTCallback(UART_HandleTypeDef *huart)
 	  } else {
 		  wifi_rxBuff[wifi_idx++] = wifi_charRead;
 	  }
+	  */
 
-	HAL_UART_Receive_IT(&WIFI_UART_HANDLE , &charRead, 1);
+	  printf("%s", rxData);
+	  clearBuffer(rxData, 5); // Clear buffer
+
+	HAL_UART_Receive_IT(&WIFI_UART_HANDLE , (uint8_t*)rxData, 1);
+	// HAL_UART_Receive_IT(&WIFI_UART_HANDLE , &charRead, 1);
 }
 
 void debugCallback(UART_HandleTypeDef *huart)
@@ -154,8 +165,9 @@ int main(void)
   MX_USB_OTG_FS_PCD_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
-  //HAL_UART_RegisterCallback(&WIFI_UART_HANDLE , HAL_UART_RX_COMPLETE_CB_ID, myUARTCallback);
+  HAL_UART_RegisterCallback(&WIFI_UART_HANDLE , HAL_UART_RX_COMPLETE_CB_ID, myUARTCallback);
   //HAL_UART_Receive_IT(&WIFI_UART_HANDLE , &wifi_charRead, 1);
+  HAL_UART_Receive_IT(&WIFI_UART_HANDLE , (uint8_t*)rxData, 1);
 
   //HAL_UART_RegisterCallback(&DEBUG_UART_HANDLE , HAL_UART_RX_COMPLETE_CB_ID, debugCallback);
   //	HAL_UART_Receive_IT(&DEBUG_UART_HANDLE , &charRead, 1);
@@ -175,13 +187,15 @@ int main(void)
 	  }
 	   if (wifi_new_line){
 		   HAL_UART_Transmit(&DEBUG_UART_HANDLE, (uint8_t*)wifi_line, strlen(line), 1000);
+		   printf("%s", wifi_line);
 		  wifi_new_line = 0;
-	  }
-	   */
+	  }*/
+
 	  // UART TX ONLY WORKS WHEN USB / DEBUG DISCONNECTED
 	  // WITH DEBUGGER, CAN TEST RX
 	  // OR - IT SEEMS THAT CONNECTING GND IS ENOUGH
 	   HAL_UART_Transmit(&WIFI_UART_HANDLE, (uint8_t*)"CHAU\n", 5, 1000);
+	   //printf("CHAU\n");
 	   HAL_Delay(1000);
 
 
