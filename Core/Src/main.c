@@ -257,7 +257,6 @@ void Activate_ChopRoutine(void);
 void Control_CriticalSignals(void);
 void Control_CTsignal(void);
 void Control_FEsignal(void);
-void Release_CriticalSignals(void); // TODO - not used
 
 /* USER CODE END PFP */
 
@@ -290,7 +289,7 @@ void GPS_UART_Callback(UART_HandleTypeDef *huart)
             GPSnew_line = 1;
             GPSrxBuff[0] = 0;
             gps_dataMillis = HAL_GetTick();
-            //printf("GPS: %s\r\n", GPSline);
+            // printf("GPS: %s\r\n", GPSline);
         }
         else
         {
@@ -311,13 +310,12 @@ void WIFI_UART_Callback(UART_HandleTypeDef *huart)
     {
         if (WIFIidx > 0)
         {
-            /* DEBUG 
+
             memcpy(WIFIline, WIFIrxBuff, WIFIidx);
             WIFIline[WIFIidx++] = '\r';
             WIFIline[WIFIidx++] = '\n';
             WIFIline[WIFIidx] = '\0';
             WIFInew_line = 1;
-            */
             WIFIrxBuff[0] = '\0';
             WIFIidx = 0;
             // printf("WIFI: %s\r\n", WIFIline);
@@ -338,25 +336,28 @@ void clearBuffer(char *buffer, size_t size)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    // TO BE IMPLEMENTED - Logic for reading speed from hasler and optical pulses
     if (huart->Instance == RS485_1_UART_HANDLE.Instance)
     {
-        if (rs485_1_charRead == '\r' || rs485_1_charRead == '\n')
+        rs485_1_rxBuff[rs485_1_idx++] = rs485_1_charRead;
+
+        if (rs485_1_charRead == 0x7E)
         {
-            if (rs485_1_idx > 0)
+            if (rs485_1_idx == 31)
             {
                 memcpy(rs485_1_line, rs485_1_rxBuff, rs485_1_idx);
                 rs485_1_line[rs485_1_idx] = '\0';
                 rs485_1_new_line = 1;
                 rs485_1_rxBuff[0] = '\0';
-                rs485_1_idx = 0;
+                rs485_1_new_line = 1;
                 rs485_1_dataMillis = HAL_GetTick();
+                rs485_1_idx = 0;
                 // printf("rs485_1: %s\r\n", rs485_1_line);
             }
-        }
-        else
-        {
-            rs485_1_rxBuff[rs485_1_idx++] = rs485_1_charRead;
+            else if (rs485_1_idx > 31)
+            {
+                rs485_1_rxBuff[0] = '\0';
+                rs485_1_idx = 0;
+            }
         }
 
         rs485_1_charRead = 0;
@@ -396,12 +397,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
                     localSerial_line[localSerial_idx] = '\0';
                     localSerial_new_line = 1;
                     localSerial_rxBuff[0] = '\0';
-                    
-
-                    // TODO - DELETE THIS - ONLY FOR DEBUG PURPOSES
-                    memcpy(WIFIline, localSerial_line, localSerial_idx+1);
-                    WIFInew_line = 1;
-                    
                     localSerial_idx = 0;
                     // printf("localSerial: %s\r\n", localSerial_line);
                 }
@@ -414,7 +409,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
             localSerial_charRead = 0;
             HAL_UART_Receive_IT(&LOCAL_SERIAL_UART_HANDLE, &localSerial_charRead, 1);
         }
-}
+    }
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
@@ -533,15 +528,11 @@ void Read_Speed(void)
 void Read_HaslerSpeed(void)
 {
     uint32_t currentMillis;
-    char *pEnd;
+
     if (rs485_1_new_line)
     {
 
-        hasler_speed = strtof(rs485_1_line, &pEnd);
-        if (pEnd == rs485_1_line)
-        {
-            hasler_speed = -1;
-        }
+        hasler_speed = rs485_1_line[HASLER_SPEED_BYTE];
 
         rs485_1_new_line = 0;
     }
@@ -842,7 +833,7 @@ void Read_RemoteCommand(void)
         else if (strcmp(command, "INTERMITENTE_CONFIG") == 0)
         {
             Update_ChopConfig(remote_command_buffer + strlen(command) + 1);
-        } 
+        }
         else if (strcmp(command, "DOWNLOAD_LOGS") == 0)
         {
             Log_Event("REMOTE_LOG_DOWNLOAD_START");
@@ -858,11 +849,11 @@ void Read_RemoteCommand(void)
         currentMillis = HAL_GetTick();
         if (currentMillis - remote_command_Millis > command_validity_s * 1000)
         {
-            if (remote_command_active == COMMAND_ACTIVE){
+            if (remote_command_active == COMMAND_ACTIVE)
+            {
                 remote_command_active = COMMAND_INACTIVE;
                 Log_Event("REMOTE_COMMAND_EXPIRED");
             }
-            
         }
     }
 }
@@ -951,14 +942,15 @@ void Read_LocalCommand(void)
 
     if (localSerial_new_line)
     {
-        if (strcmp(localSerial_line, "DOWNLOAD_LOGS") == 0){
+        if (strcmp(localSerial_line, "DOWNLOAD_LOGS") == 0)
+        {
             Log_Event("LOCAL_LOG_DOWNLOAD_START");
             read_file_line_by_line(local_log_file_name, &LOCAL_SERIAL_UART_HANDLE);
             Log_Event("LOCAL_LOG_DOWNLOAD_FINISH");
         }
-        
+
         localSerial_new_line = 0;
-    }    
+    }
 }
 
 void Display_SystemStatus(void)
@@ -1321,15 +1313,15 @@ void Control_Buzzer(void)
     if (buzzer_state == BUZZER_OFF)
     {
         HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, 0);
-        
-        // TO BE DELETED - This shows buzzer status
+
+        // TODO - This shows buzzer status
         HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 0);
     }
     else if (buzzer_state == BUZZER_ON_CONTINUOS)
     {
         HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, 1);
 
-        // TO BE DELETED - This shows buzzer status
+        // TODO - This shows buzzer status
         HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 1);
     }
     else if (buzzer_state == BUZZER_ON_INTERMITENT)
@@ -1339,8 +1331,9 @@ void Control_Buzzer(void)
         {
             HAL_GPIO_TogglePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin);
 
-            // TO BE DELETED - This shows buzzer status
+            // TODO - This shows buzzer status
             HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+
             buzzer_toggle_ms = currentMillis;
         }
     }
@@ -1634,9 +1627,12 @@ void Activate_ChopRoutine(void)
 
     critical_signal_state_t active_state;
 
-    if (salt_mode == MODO_LIMITADO){
+    if (salt_mode == MODO_LIMITADO)
+    {
         active_state = SIGNAL_UNINTERFERED;
-    } else {
+    }
+    else
+    {
         active_state = SIGNAL_BYPASSED;
     }
 
@@ -1774,14 +1770,6 @@ void Control_FEsignal(void)
         sprintf(local_log_buffer, "FE_SIGNAL_STATE: %d", FE_signal);
         Log_Event(local_log_buffer);
     }
-}
-
-void Release_CriticalSignals(void)
-{
-    CT_signal = SIGNAL_UNINTERFERED;
-    Control_CTsignal();
-    FE_signal = SIGNAL_UNINTERFERED;
-    Control_FEsignal();
 }
 
 /* USER CODE END 0 */

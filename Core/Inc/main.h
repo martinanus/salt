@@ -369,13 +369,15 @@ extern "C"
 #define ADC_HANDLE hadc3
 #define SIS_FAIL_THRESHOLD 0x030 // 5v-3v3=0x057 3v3=0x078 5v=0x0C0 V in SIS input
 
+#define HASLER_SPEED_BYTE 6
+
 #define MAX_LOG_LENGTH 256
 #define MAX_COMMAND_LENGTH 256
 #define MAX_BUFFER_LENGTH 256
 #define BTN_DEBOUNCE_MS 100
 
 #define SPEED_STOP 0.5            // km/h
-#define SPEED_READ_VALIDITY_S 2   // s
+#define SPEED_READ_VALIDITY_S 3   // s
 #define ZONE_READ_VALIDITY_S 60   // s
 #define KNOT_TO_KM_H_FACTOR 1.852 // multiplier factor
 #define BUZZER_SOUND_PERIOD_S 1   // s
