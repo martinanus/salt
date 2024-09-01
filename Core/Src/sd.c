@@ -72,7 +72,7 @@ void write_in_file(const char *filename, const char *buffer)
         unsigned int bytes_written;
         if (f_write(&file, buffer, strlen(buffer), &bytes_written) == FR_OK)
         {
-            printf("%s wrote in file: %s\r\n", buffer, filename);
+            ;//printf("%s wrote in file: %s\r\n", buffer, filename);
         }
         else
         {

@@ -706,19 +706,19 @@ void Handle_SaltMode_Transition(void)
 
     if (remote_command_active == COMMAND_ACTIVE)
     {
-        if (strcmp(remote_command_buffer, "AISLADO_TOTAL") == 0)
+        if (strncmp(remote_command_buffer, "AISLADO_TOTAL", strlen("AISLADO_TOTAL")) == 0)
         {
             salt_mode = MODO_TOTAL;
         }
-        else if (strcmp(remote_command_buffer, "PARADA_TOTAL") == 0)
+        else if (strncmp(remote_command_buffer, "PARADA_TOTAL", strlen("PARADA_TOTAL")) == 0)
         {
             salt_mode = MODO_PARADA;
         }
-        else if (strcmp(remote_command_buffer, "COCHE_DERIVA") == 0)
+        else if (strncmp(remote_command_buffer, "COCHE_DERIVA", strlen("COCHE_DERIVA")) == 0)
         {
             salt_mode = MODO_COCHE_DERIVA;
         }
-        else if (strncmp(remote_command_buffer, "INTERMITENTE", 12) == 0)
+        else if (strncmp(remote_command_buffer, "INTERMITENTE", strlen("INTERMITENTE")) == 0)
         {
             salt_mode = MODO_INTERMITENTE;
         }
@@ -790,7 +790,7 @@ void Read_RemoteCommand(void)
     {
 
         sprintf(remote_command_buffer, WIFIline);
-        sscanf(remote_command_buffer, "%[^:]", command);
+        sscanf(remote_command_buffer, "%[^:\r\n]", command);
 
         if (strcmp(command, "AISLADO_TOTAL") == 0)
         {
@@ -915,6 +915,7 @@ void Update_ChopConfig(char *command)
 
     if (sscanf(command, "%d,%d,%d,%d,%d", &profile, &chop_parameters[0], &chop_parameters[1], &chop_parameters[2], &chop_parameters[3]) == 5)
     {
+        profile += 1; // offset by starting array in idx 0
         chop_profile_config[profile][0] = chop_parameters[0];
         chop_profile_config[profile][1] = chop_parameters[1];
         chop_profile_config[profile][2] = chop_parameters[2];
@@ -930,9 +931,9 @@ void Select_ChopProfile(char *command)
 
     if (sscanf(command, "%d", &profile) == 1)
     {
-        if (profile < 5)
+        if (profile >= 1 && profile <= 5)
         {
-            chop_profile = profile;
+            chop_profile = profile - 1;
         }
     }
 }
@@ -1020,20 +1021,21 @@ void Build_LedIndicators()
         mode_MAL_led = LED_ALL_OFF;
         mode_MAT_led = LED_ALL_OFF;
 
+        CT_led = LED_OFF;
+        FE_led = LED_OFF;
+
         for (uint8_t i = 0; i < 5; i++)
         {
             chop_profile_leds[i] = LED_OFF;
         }
 
-        active_command_led = LED_ALL_OFF;
-
-        if (gps_status == STATUS_OK)
+        if (remote_command_active == COMMAND_ACTIVE)
         {
-            gps_led = LED_G;
+            active_command_led = LED_G;
         }
         else
         {
-            gps_led = LED_R;
+            active_command_led = LED_ALL_OFF;
         }
 
         for (uint8_t i = 0; i < 5; i++)
@@ -1074,15 +1076,6 @@ void Build_LedIndicators()
             active_command_led = LED_ALL_OFF;
         }
 
-        if (gps_status == STATUS_OK)
-        {
-            gps_led = LED_G;
-        }
-        else
-        {
-            gps_led = LED_R;
-        }
-
         // SIS_leds[i] remains unchanged from normal mode to show SIS failing
 
         if (CT_signal == SIGNAL_OPEN)
@@ -1109,6 +1102,9 @@ void Build_LedIndicators()
         mode_MAL_led = LED_ALL_OFF;
         mode_MAT_led = LED_G;
 
+        CT_led = LED_OFF;
+        FE_led = LED_OFF;
+
         for (uint8_t i = 0; i < 5; i++)
         {
             chop_profile_leds[i] = LED_OFF;
@@ -1123,16 +1119,92 @@ void Build_LedIndicators()
             active_command_led = LED_ALL_OFF;
         }
 
-        if (gps_status == STATUS_OK)
+        for (uint8_t i = 0; i < 5; i++)
         {
-            gps_led = LED_G;
+            SIS_leds[i] = LED_R;
+        }
+    }
+    else if (salt_mode == MODO_PARADA)
+    {
+        mode_MAL_led = LED_ALL_OFF;
+        mode_MAT_led = LED_ALL_OFF;
+
+        CT_led = LED_ON;
+        FE_led = LED_ON;
+
+        for (uint8_t i = 0; i < 5; i++)
+        {
+            chop_profile_leds[i] = LED_OFF;
+        }
+
+        active_command_led = LED_G;
+
+        for (uint8_t i = 0; i < 5; i++)
+        {
+            SIS_leds[i] = LED_R;
+        }
+    }
+    else if (salt_mode == MODO_COCHE_DERIVA)
+    {
+        mode_MAL_led = LED_ALL_OFF;
+        mode_MAT_led = LED_ALL_OFF;
+
+        CT_led = LED_OFF;
+        FE_led = LED_ON;
+
+        for (uint8_t i = 0; i < 5; i++)
+        {
+            chop_profile_leds[i] = LED_OFF;
+        }
+
+        active_command_led = LED_G;
+
+        for (uint8_t i = 0; i < 5; i++)
+        {
+            SIS_leds[i] = LED_R;
+        }
+    }
+    else if (salt_mode == MODO_INTERMITENTE)
+    {
+        mode_MAL_led = LED_ALL_OFF;
+        mode_MAT_led = LED_ALL_OFF;
+
+        if (CT_signal == SIGNAL_OPEN)
+        {
+            CT_led = LED_ON;
         }
         else
         {
-            gps_led = LED_R;
+            CT_led = LED_OFF;
         }
 
-        // SIS_leds[i] remains unchanged from normal mode to show SIS failing
+        if (FE_signal == SIGNAL_OPEN)
+        {
+            FE_led = LED_ON;
+        }
+        else
+        {
+            FE_led = LED_OFF;
+        }
+
+        for (uint8_t i = 0; i < 5; i++)
+        {
+            if (chop_profile == i)
+            {
+                chop_profile_leds[i] = LED_ON;
+            }
+            else
+            {
+                chop_profile_leds[i] = LED_OFF;
+            }
+        }
+
+        active_command_led = LED_G;
+
+        for (uint8_t i = 0; i < 5; i++)
+        {
+            SIS_leds[i] = LED_R;
+        }
     }
 
     switch (current_zone)
@@ -1149,6 +1221,15 @@ void Build_LedIndicators()
     default:
         zone_led = LED_ALL_OFF;
         break;
+    }
+
+    if (gps_status == STATUS_OK)
+    {
+        gps_led = LED_G;
+    }
+    else
+    {
+        gps_led = LED_R;
     }
 
     setDigit4_regValue();
@@ -1362,7 +1443,7 @@ void Log_Event(const char *event)
 
     // TODO - uncomment this
     // write_in_file(local_log_file_name, buffer);
-    // Transmit_RemoteEvents(buffer);
+    Transmit_RemoteEvents(buffer);
     printf(buffer);
 }
 
