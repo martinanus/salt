@@ -131,6 +131,7 @@ float speed;
 float hasler_speed = -1;
 float pulse_generator_speed = -1;
 float gps_speed = -1;
+float prev_speed;
 speed_source_t speed_source;
 speed_source_t prev_speed_source;
 
@@ -157,7 +158,7 @@ switch_state_t MAL_switch_state_2 = SWITCH_OFF;
 switch_state_t MAT_switch_state_1 = SWITCH_OFF;
 switch_state_t MAT_switch_state_2 = SWITCH_OFF;
 
-char remote_command_buffer[MAX_COMMAND_LENGTH];
+char remote_command[MAX_COMMAND_LENGTH];
 command_states_t remote_command_active;
 uint32_t remote_command_Millis = 0;
 
@@ -227,11 +228,11 @@ void Read_ActivationSwitchState(void);
 void Read_MALSwitchState(void);
 void Read_MATSwitchState(void);
 void Read_RemoteCommand(void);
-void Update_RTCDateTime(char *command);
-void Update_CommandValidity(char *command);
-void Update_SpeedConfig(char *command);
-void Update_ChopConfig(char *command);
-void Select_ChopProfile(char *command);
+void Update_RTCDateTime(char *remote_command);
+void Update_CommandValidity(char *remote_command);
+void Update_SpeedConfig(char *remote_command);
+void Update_ChopConfig(char *remote_command);
+void Select_ChopProfile(char *remote_command);
 void Read_LocalCommand(void);
 void Display_SystemStatus(void);
 void Build_SystemStatus(void);
@@ -312,8 +313,6 @@ void WIFI_UART_Callback(UART_HandleTypeDef *huart)
         {
 
             memcpy(WIFIline, WIFIrxBuff, WIFIidx);
-            WIFIline[WIFIidx++] = '\r';
-            WIFIline[WIFIidx++] = '\n';
             WIFIline[WIFIidx] = '\0';
             WIFInew_line = 1;
             WIFIrxBuff[0] = '\0';
@@ -490,6 +489,7 @@ void Read_Speed(void)
     Read_GPSSpeed();
 
     prev_speed_source = speed_source;
+    prev_speed = speed;
 
     if (hasler_speed != -1)
     {
@@ -517,12 +517,15 @@ void Read_Speed(void)
         sprintf(local_log_buffer, "SPEED_SOURCE: %d", speed_source);
         Log_Event(local_log_buffer);
     }
-    // TO BE IMPLEMENTED - SET FREQ FOR THIS
-    // Using timer or freeRTOS
-    // if (speed_source != SPEED_NONE){
-    //   sprintf(local_log_buffer, "SPEED: %.2f", speed);
-    //   Log_Event(local_log_buffer);
-    // }
+    
+    if (speed != prev_speed)
+    {
+        if (speed_source != SPEED_NONE)
+        {
+            sprintf(local_log_buffer, "SPEED: %.2f", speed);
+            Log_Event(local_log_buffer);
+        }
+    }
 }
 
 void Read_HaslerSpeed(void)
@@ -706,19 +709,19 @@ void Handle_SaltMode_Transition(void)
 
     if (remote_command_active == COMMAND_ACTIVE)
     {
-        if (strncmp(remote_command_buffer, "AISLADO_TOTAL", strlen("AISLADO_TOTAL")) == 0)
+        if (strcmp(remote_command, "AISLADO_TOTAL") == 0)
         {
             salt_mode = MODO_TOTAL;
         }
-        else if (strncmp(remote_command_buffer, "PARADA_TOTAL", strlen("PARADA_TOTAL")) == 0)
+        else if (strcmp(remote_command, "PARADA_TOTAL") == 0)
         {
             salt_mode = MODO_PARADA;
         }
-        else if (strncmp(remote_command_buffer, "COCHE_DERIVA", strlen("COCHE_DERIVA")) == 0)
+        else if (strcmp(remote_command, "COCHE_DERIVA") == 0)
         {
             salt_mode = MODO_COCHE_DERIVA;
         }
-        else if (strncmp(remote_command_buffer, "INTERMITENTE", strlen("INTERMITENTE")) == 0)
+        else if (strcmp(remote_command, "INTERMITENTE") == 0)
         {
             salt_mode = MODO_INTERMITENTE;
         }
@@ -785,63 +788,71 @@ void Read_MATSwitchState(void)
 void Read_RemoteCommand(void)
 {
     uint32_t currentMillis;
-    char command[MAX_COMMAND_LENGTH];
+    int id;
+
+    char * command_values;
+    
     if (WIFInew_line)
     {
 
-        sprintf(remote_command_buffer, WIFIline);
-        sscanf(remote_command_buffer, "%[^:\r\n]", command);
+        sscanf(WIFIline, "%d|%[^:]", &id, remote_command);
+        command_values = strchr(WIFIline, ':');        
 
-        if (strcmp(command, "AISLADO_TOTAL") == 0)
+
+        if (strcmp(remote_command, "AISLADO_TOTAL") == 0)
         {
             remote_command_active = COMMAND_ACTIVE;
             remote_command_Millis = HAL_GetTick();
         }
-        else if (strcmp(command, "PARADA_TOTAL") == 0)
+        else if (strcmp(remote_command, "PARADA_TOTAL") == 0)
         {
             remote_command_active = COMMAND_ACTIVE;
             remote_command_Millis = HAL_GetTick();
         }
-        else if (strcmp(command, "COCHE_DERIVA") == 0)
+        else if (strcmp(remote_command, "COCHE_DERIVA") == 0)
         {
             remote_command_active = COMMAND_ACTIVE;
             remote_command_Millis = HAL_GetTick();
         }
-        else if (strcmp(command, "INTERMITENTE") == 0)
+        else if (strcmp(remote_command, "INTERMITENTE") == 0)
         {
-            Select_ChopProfile(remote_command_buffer + strlen(command) + 1);
+            Select_ChopProfile(command_values + 1);
             remote_command_active = COMMAND_ACTIVE;
             remote_command_Millis = HAL_GetTick();
         }
-        else if (strcmp(command, "CANCEL") == 0)
+        else if (strcmp(remote_command, "CANCEL") == 0)
         {
             remote_command_active = COMMAND_INACTIVE;
             Log_Event("REMOTE_COMMANDS_CANCELED");
         }
-        else if (strcmp(command, "DATETIME") == 0)
+        else if (strcmp(remote_command, "DATETIME") == 0)
         {
-            Update_RTCDateTime(remote_command_buffer + strlen(command) + 1);
+            Update_RTCDateTime(command_values + 1);
         }
-        else if (strcmp(command, "COMMAND_VALIDITY_CONFIG") == 0)
+        else if (strcmp(remote_command, "COMMAND_VALIDITY_CONFIG") == 0)
         {
-            Update_CommandValidity(remote_command_buffer + strlen(command) + 1);
+            Update_CommandValidity(command_values + 1);
         }
-        else if (strcmp(command, "SPEED_CONFIG") == 0)
+        else if (strcmp(remote_command, "SPEED_CONFIG") == 0)
         {
-            Update_SpeedConfig(remote_command_buffer + strlen(command) + 1);
+            Update_SpeedConfig(command_values + 1);
         }
-        else if (strcmp(command, "INTERMITENTE_CONFIG") == 0)
+        else if (strcmp(remote_command, "INTERMITENTE_CONFIG") == 0)
         {
-            Update_ChopConfig(remote_command_buffer + strlen(command) + 1);
+            Update_ChopConfig(command_values + 1);
         }
-        else if (strcmp(command, "DOWNLOAD_LOGS") == 0)
+        else if (strcmp(remote_command, "DOWNLOAD_LOGS") == 0)
         {
             Log_Event("REMOTE_LOG_DOWNLOAD_START");
             read_file_line_by_line(local_log_file_name, &WIFI_UART_HANDLE);
             Log_Event("REMOTE_LOG_DOWNLOAD_FINISH");
         }
 
-        // TO BE IMPLEMENTED - SEND CONFIRMATION MSG
+        if (id){
+            sprintf(local_log_buffer, "COMMAND_RECEIVED_ID: %d", id);
+            Log_Event(local_log_buffer);
+        }
+        
         WIFInew_line = 0;
     }
     else
@@ -858,14 +869,14 @@ void Read_RemoteCommand(void)
     }
 }
 
-void Update_RTCDateTime(char *command)
+void Update_RTCDateTime(char *remote_command)
 {
 
     RTC_TimeTypeDef sTime = {0};
     RTC_DateTypeDef sDate = {0};
     int day, month, year, hours, minutes, seconds;
 
-    sscanf(command, "%02d/%02d/%04d %02d:%02d:%02d",
+    sscanf(remote_command, "%02d/%02d/%04d %02d:%02d:%02d",
            &day, &month, &year, &hours, &minutes, &seconds);
 
     sTime.Hours = hours;
@@ -881,22 +892,22 @@ void Update_RTCDateTime(char *command)
     HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 }
 
-void Update_CommandValidity(char *command)
+void Update_CommandValidity(char *remote_command)
 {
     int new_command_validity;
 
-    sscanf(command, "%d", &new_command_validity);
+    sscanf(remote_command, "%d", &new_command_validity);
 
     command_validity_s = new_command_validity;
     sprintf(local_log_buffer, "COMMAND_VALIDITY: %d", command_validity_s);
     Log_Event(local_log_buffer);
 }
 
-void Update_SpeedConfig(char *command)
+void Update_SpeedConfig(char *remote_command)
 {
     int speeds[4];
 
-    if (sscanf(command, "%d,%d,%d,%d", &speeds[0], &speeds[1], &speeds[2], &speeds[3]) == 4)
+    if (sscanf(remote_command, "%d,%d,%d,%d", &speeds[0], &speeds[1], &speeds[2], &speeds[3]) == 4)
     {
         memcpy(speed_configs, speeds, sizeof(speed_configs));
         speed_configs[0] = speeds[0];
@@ -908,12 +919,12 @@ void Update_SpeedConfig(char *command)
     }
 }
 
-void Update_ChopConfig(char *command)
+void Update_ChopConfig(char *remote_command)
 {
     int profile;
     int chop_parameters[4];
 
-    if (sscanf(command, "%d,%d,%d,%d,%d", &profile, &chop_parameters[0], &chop_parameters[1], &chop_parameters[2], &chop_parameters[3]) == 5)
+    if (sscanf(remote_command, "%d,%d,%d,%d,%d", &profile, &chop_parameters[0], &chop_parameters[1], &chop_parameters[2], &chop_parameters[3]) == 5)
     {
         profile += 1; // offset by starting array in idx 0
         chop_profile_config[profile][0] = chop_parameters[0];
@@ -925,11 +936,11 @@ void Update_ChopConfig(char *command)
     }
 }
 
-void Select_ChopProfile(char *command)
+void Select_ChopProfile(char *remote_command)
 {
     int profile;
 
-    if (sscanf(command, "%d", &profile) == 1)
+    if (sscanf(remote_command, "%d", &profile) == 1)
     {
         if (profile >= 1 && profile <= 5)
         {
