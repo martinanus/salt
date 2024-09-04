@@ -1,7 +1,7 @@
 
 const int BUFFER_SIZE = 256;
 char suscribeBuffer[BUFFER_SIZE];
-char uartRxBuffer[BUFFER_SIZE];
+char uartRxBuffer[BUFFER_SIZE] = {"23.4"};
 int uartRxBufferIndex = 0;
 
 unsigned long lastMillis = 0;
@@ -13,7 +13,6 @@ void setup() {
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
 
-  Serial.println("Let's start...");
     digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
   delay(1000);                      // wait for a second
   digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
@@ -24,14 +23,14 @@ void setup() {
 void loop() {
   delay(1000);
 
-  Serial.println("NEW MESSAGE");
-  /*
+  Serial.println(uartRxBuffer);
+  
+  
   while (Serial.available() > 0) {
     char incomingByte = Serial.read();
 
     if (incomingByte == '\n') {
       uartRxBuffer[uartRxBufferIndex] = '\0';      
-      Serial.println(uartRxBuffer);
       digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
       uartRxBufferIndex = 0;
       delay(1000);
@@ -44,6 +43,6 @@ void loop() {
       }
     }
   }
-  */
+  
   
 }
