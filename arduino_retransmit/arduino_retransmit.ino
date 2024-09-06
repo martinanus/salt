@@ -31,10 +31,7 @@ void loop() {
 
     if (incomingByte == '\n') {
       uartRxBuffer[uartRxBufferIndex] = '\0';      
-      digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
       uartRxBufferIndex = 0;
-      delay(1000);
-      digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
     } else {
       if (uartRxBufferIndex < BUFFER_SIZE - 1) {
         uartRxBuffer[uartRxBufferIndex++] = incomingByte;

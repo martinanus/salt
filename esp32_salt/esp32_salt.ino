@@ -18,9 +18,11 @@ const char* mqtt_publish_name = "SALT";
 const char* mqtt_user_name = "salt-ma";
 const char* mqtt_user_token = "1f05DXKCezK1hnck";
 
-const char* mqtt_suscribe_topic = "salt_remote_command";
-const char* mqtt_publish_log_topic = "salt_remote_log";
-const char* mqtt_publish_ack_topic = "salt_remote_ack";
+const char* mqtt_suscribe_topic         = "salt_remote_command";
+const char* mqtt_publish_log_topic      = "salt_remote_log";
+const char* mqtt_publish_ack_topic      = "salt_remote_ack";
+const char* mqtt_publish_status_topic   = "salt_status";
+
 
 
 
@@ -174,6 +176,8 @@ void loop() {
       uartRxBuffer[uartRxBufferIndex] = '\0';
       if (strncmp(uartRxBuffer, "ACK", 3) == 0) {
         mqtt_client.publish(mqtt_publish_ack_topic, uartRxBuffer);
+      } else if (strncmp(uartRxBuffer, "STATUS", 6) == 0) {
+        mqtt_client.publish(mqtt_publish_status_topic, uartRxBuffer);
       }
       else{
         mqtt_client.publish(mqtt_publish_log_topic, uartRxBuffer);
