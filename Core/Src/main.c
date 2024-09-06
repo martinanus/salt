@@ -64,6 +64,7 @@ UART_HandleTypeDef huart3;
 
 salt_mode_t salt_mode = MODO_NORMAL;
 salt_mode_t prev_salt_mode;
+char * salt_mode_labels[] = SALT_MODE_LABELS;
 
 uint8_t command_validity_s = COMMAND_VALIDITY_INITIAL;
 uint8_t speed_configs[4] = SPEED_CONFIG_INITIAL;
@@ -134,6 +135,7 @@ float gps_speed = -1;
 float prev_speed;
 speed_source_t speed_source;
 speed_source_t prev_speed_source;
+char * speed_source_labels[] = SPEED_SOURCE_LABELS;
 
 zones_t current_zone;
 zones_t prev_zone;
@@ -152,6 +154,8 @@ critical_signal_state_t prev_CT_signal;
 
 critical_signal_state_t FE_signal;
 critical_signal_state_t prev_FE_signal;
+
+char * critical_signal_state_labels[] = CRITICAL_SIGNAL_STATE_LABELS;
 
 switch_state_t MAL_switch_state_1 = SWITCH_OFF;
 switch_state_t MAL_switch_state_2 = SWITCH_OFF;
@@ -441,7 +445,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
                 {
                     chop_profile++;
                 }
-                sprintf(local_log_buffer, "CHOP_PROFILE_%d", chop_profile);
+                sprintf(local_log_buffer, "CHOP_PROFILE_%d", chop_profile+1);
                 Log_Event(local_log_buffer);
                 previousMillis = currentMillis;
             }
@@ -515,7 +519,7 @@ void Read_Speed(void)
 
     if (speed_source != prev_speed_source)
     {
-        sprintf(local_log_buffer, "SPEED_SOURCE: %d", speed_source);
+        sprintf(local_log_buffer, "SPEED_SOURCE: %s", speed_source_labels[speed_source]);
         Log_Event(local_log_buffer);
     }
     
@@ -653,7 +657,7 @@ void Read_GPSStatus(void)
 
     if (gps_status != prev_gps_status)
     {
-        sprintf(local_log_buffer, "GPS_STATUS: %d ", gps_status);
+        sprintf(local_log_buffer, "GPS_STATUS: %s ", gps_status ? "NOT_CONNECTED" : "OK");
         Log_Event(local_log_buffer);
     }
 }
@@ -690,12 +694,12 @@ void Read_SISStatus(void)
     {
         if (SIS_state[i].FE_state != prev_SIS_state[i].FE_state)
         {
-            sprintf(local_log_buffer, "SIS_%d_FE_state: %d ", i + 1, SIS_state[i].FE_state);
+            sprintf(local_log_buffer, "SIS_%d_FE_state: %s ", i + 1, SIS_state[i].FE_state ? "FAIL" : "OK");
             Log_Event(local_log_buffer);
         }
         if (SIS_state[i].CT_state != prev_SIS_state[i].CT_state)
         {
-            sprintf(local_log_buffer, "SIS_%d_CT_state: %d ", i + 1, SIS_state[i].CT_state);
+            sprintf(local_log_buffer, "SIS_%d_CT_state: %s ", i + 1, SIS_state[i].CT_state ? "FAIL" : "OK");
             Log_Event(local_log_buffer);
         }
     }
@@ -760,7 +764,7 @@ void Handle_SaltMode_Transition(void)
             HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_ENERGIZED);
         }
 
-        sprintf(local_log_buffer, "SALT_MODE_TRANSITION: %u --> %u", prev_salt_mode, salt_mode);
+        sprintf(local_log_buffer, "SALT_MODE_TRANSITION: %s --> %s", salt_mode_labels[prev_salt_mode], salt_mode_labels[salt_mode]);
         Log_Event(local_log_buffer);
     }
 }
@@ -800,7 +804,7 @@ void Read_RemoteCommand(void)
         command_values = strchr(WIFIline, ':');
 
         if (id){
-            sprintf(local_log_buffer, "COMMAND_RECEIVED: %s", remote_command);
+            snprintf(local_log_buffer,sizeof(local_log_buffer), "COMMAND_RECEIVED: %s", remote_command);
             Log_Event(local_log_buffer);
             Send_CommandAcknoledge(id);
         }   
@@ -1394,7 +1398,7 @@ void Activate_ZoneRelay(void)
 
     if (zone_relay != prev_zone_relay)
     {
-        sprintf(local_log_buffer, "ZONE_RELAY: %d", zone_relay);
+        sprintf(local_log_buffer, "ZONE_RELAY: %s", zone_relay ? "RELAY_ENERGIZED" : "RELAY_NORMAL");
         Log_Event(local_log_buffer);
     }
 }
@@ -1834,7 +1838,7 @@ void Control_CTsignal(void)
 
     if (CT_signal != prev_CT_signal)
     {
-        sprintf(local_log_buffer, "CT_SIGNAL_STATE: %d", CT_signal);
+        sprintf(local_log_buffer, "CT_SIGNAL_STATE: %s", critical_signal_state_labels[CT_signal]);
         Log_Event(local_log_buffer);
     }
 }
@@ -1869,7 +1873,7 @@ void Control_FEsignal(void)
 
     if (FE_signal != prev_FE_signal)
     {
-        sprintf(local_log_buffer, "FE_SIGNAL_STATE: %d", FE_signal);
+        sprintf(local_log_buffer, "FE_SIGNAL_STATE: %s", critical_signal_state_labels[FE_signal]);
         Log_Event(local_log_buffer);
     }
 }
