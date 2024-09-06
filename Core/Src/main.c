@@ -247,6 +247,7 @@ void setDigit7_regValue(void);
 void Send_SystemStatus(void);
 void Activate_ZoneRelay(void);
 void Log_Event(const char *event);
+void Send_CommandAcknoledge(int id);
 void Transmit_RemoteEvents(const char *buffer);
 void Control_Buzzer(void);
 void Activate_SISBypass(void);
@@ -796,8 +797,13 @@ void Read_RemoteCommand(void)
     {
 
         sscanf(WIFIline, "%d|%[^:]", &id, remote_command);
-        command_values = strchr(WIFIline, ':');        
+        command_values = strchr(WIFIline, ':');
 
+        if (id){
+            sprintf(local_log_buffer, "COMMAND_RECEIVED: %s", remote_command);
+            Log_Event(local_log_buffer);
+            Send_CommandAcknoledge(id);
+        }   
 
         if (strcmp(remote_command, "AISLADO_TOTAL") == 0)
         {
@@ -848,10 +854,6 @@ void Read_RemoteCommand(void)
             Log_Event("REMOTE_LOG_DOWNLOAD_FINISH");
         }
 
-        if (id){
-            sprintf(local_log_buffer, "COMMAND_RECEIVED_ID: %d", id);
-            Log_Event(local_log_buffer);
-        }
         
         WIFInew_line = 0;
     }
@@ -1454,6 +1456,14 @@ void Log_Event(const char *event)
 
     // TODO - uncomment this
     // write_in_file(local_log_file_name, buffer);
+    Transmit_RemoteEvents(buffer);
+    printf(buffer);
+}
+
+void Send_CommandAcknoledge(int id)
+{
+    char buffer[MAX_BUFF_SIZE];
+    snprintf(buffer, sizeof(buffer), "ACK: %d\r\n", id);    
     Transmit_RemoteEvents(buffer);
     printf(buffer);
 }
