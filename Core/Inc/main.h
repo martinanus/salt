@@ -390,7 +390,11 @@ extern "C"
 
 #define COMMAND_VALIDITY_INITIAL 10           // s
 #define REPORT_STATUS_PERIOD_S 5              // s
-#define SPEED_CONFIG_INITIAL {30, 25, 36, 10} // speed_limit_to_decelerate, speed_limit_to_accelerate, speed_limit_to_brake, time_to_brake_s
+#define NO_ZONE_SPEED_CONFIG_INITIAL {29, 24, 35, 15} // speed_limit_to_decelerate, speed_limit_to_accelerate, speed_limit_to_brake, time_to_brake_s}
+#define ZONE_1_SPEED_CONFIG_INITIAL {30, 25, 36, 10} 
+#define ZONE_2_SPEED_CONFIG_INITIAL {35, 27, 40, 8} 
+#define ZONE_3_SPEED_CONFIG_INITIAL {40, 30, 50, 6} 
+
 #define CHOP_PROFILE_1_INITIAL {3, 7, 3, 10}  //  time_to_accelerate, time_to_decelerate, number_of_cycles_before_break, time_to_brake
 #define CHOP_PROFILE_2_INITIAL {6, 14, 4, 20}
 #define CHOP_PROFILE_3_INITIAL {9, 21, 5, 30}

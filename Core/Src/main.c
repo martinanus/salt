@@ -69,7 +69,12 @@ char * salt_mode_labels[] = SALT_MODE_LABELS;
 
 uint8_t report_status_period_s = REPORT_STATUS_PERIOD_S;
 uint8_t command_validity_s = COMMAND_VALIDITY_INITIAL;
-uint8_t speed_configs[4] = SPEED_CONFIG_INITIAL;
+uint8_t speed_configs[4][4] = {
+    NO_ZONE_SPEED_CONFIG_INITIAL,
+    ZONE_1_SPEED_CONFIG_INITIAL,
+    ZONE_2_SPEED_CONFIG_INITIAL,
+    ZONE_3_SPEED_CONFIG_INITIAL    
+};
 uint8_t chop_profile_config[5][4] = {
     CHOP_PROFILE_1_INITIAL,
     CHOP_PROFILE_2_INITIAL,
@@ -198,8 +203,6 @@ char remote_events_buffer[MAX_LOG_LENGTH];
 
 chop_profile_t chop_profile = CHOP_PROFILE_0;
 
-HAL_I2C_StateTypeDef i2c_state;
-HAL_StatusTypeDef result;
 
 /* USER CODE END PV */
 
@@ -404,10 +407,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
                 {
                     memcpy(localSerial_line, localSerial_rxBuff, localSerial_idx);
                     localSerial_line[localSerial_idx] = '\0';
-                    localSerial_new_line = 1;
+                    localSerial_new_line = 1;                    
+
+
                     localSerial_rxBuff[0] = '\0';
                     localSerial_idx = 0;
                     // printf("localSerial: %s\r\n", localSerial_line);
+
                 }
             }
             else
@@ -932,16 +938,17 @@ void Update_CommandValidity(char *remote_command)
 
 void Update_SpeedConfig(char *remote_command)
 {
+    int zone;
     int speeds[4];
 
-    if (sscanf(remote_command, "%d,%d,%d,%d", &speeds[0], &speeds[1], &speeds[2], &speeds[3]) == 4)
+    if (sscanf(remote_command, "%d,%d,%d,%d,%d", &zone, &speeds[0], &speeds[1], &speeds[2], &speeds[3]) == 5)
     {
-        memcpy(speed_configs, speeds, sizeof(speed_configs));
-        speed_configs[0] = speeds[0];
-        speed_configs[1] = speeds[1];
-        speed_configs[2] = speeds[2];
-        speed_configs[3] = speeds[3];
-        sprintf(local_log_buffer, "SPEED_CONFIG: %u,%u,%u,%u", speeds[0], speeds[1], speeds[2], speeds[3]);
+        memcpy(speed_configs, speeds, sizeof(speed_configs));        
+        speed_configs[zone][0] = speeds[0];
+        speed_configs[zone][1] = speeds[1];
+        speed_configs[zone][2] = speeds[2];
+        speed_configs[zone][3] = speeds[3];
+        sprintf(local_log_buffer, "SPEED_CONFIG_ZONE_%u: %u,%u,%u,%u", zone, speeds[0], speeds[1], speeds[2], speeds[3]);
         Log_Event(local_log_buffer);
     }
 }
@@ -953,7 +960,7 @@ void Update_ChopConfig(char *remote_command)
 
     if (sscanf(remote_command, "%d,%d,%d,%d,%d", &profile, &chop_parameters[0], &chop_parameters[1], &chop_parameters[2], &chop_parameters[3]) == 5)
     {
-        profile += 1; // offset by starting array in idx 0
+        profile -= 1; // offset by starting array in idx 0
         chop_profile_config[profile][0] = chop_parameters[0];
         chop_profile_config[profile][1] = chop_parameters[1];
         chop_profile_config[profile][2] = chop_parameters[2];
@@ -1390,12 +1397,12 @@ void Send_SystemStatus(void)
 
     for (uint8_t digit = 0; digit < 4; digit++)
     {
-        result = LedDriver_WriteReg(digit + 1, digit7Segment[digit], &I2C_HANDLE);
+        LedDriver_WriteReg(digit + 1, digit7Segment[digit], &I2C_HANDLE);
     }
-    result = LedDriver_WriteReg(0x05, digit4_reg_value, &I2C_HANDLE);
-    result = LedDriver_WriteReg(0x06, digit5_reg_value, &I2C_HANDLE);
-    result = LedDriver_WriteReg(0x07, digit6_reg_value, &I2C_HANDLE);
-    result = LedDriver_WriteReg(0x08, digit7_reg_value, &I2C_HANDLE);
+    LedDriver_WriteReg(0x05, digit4_reg_value, &I2C_HANDLE);
+    LedDriver_WriteReg(0x06, digit5_reg_value, &I2C_HANDLE);
+    LedDriver_WriteReg(0x07, digit6_reg_value, &I2C_HANDLE);
+    LedDriver_WriteReg(0x08, digit7_reg_value, &I2C_HANDLE);
 
     Activate_ZoneRelay();
     Control_Buzzer();
@@ -1661,10 +1668,15 @@ void Set_CriticalSignals_State(void)
     static uint32_t last_FE_signal_activation_ms = 0;
     uint32_t currentMillis;
 
-    uint8_t speed_limit_to_decelerate = speed_configs[0]; // km/h
-    uint8_t speed_limit_to_accelerate = speed_configs[1]; // km/h
-    uint8_t speed_limit_to_brake = speed_configs[2];      // km/h
-    uint8_t time_to_brake_s = speed_configs[3];           // s-->thold = 30s
+    uint8_t speed_config_selected[4];
+
+    memcpy(speed_config_selected, speed_configs[current_zone], sizeof(speed_config_selected));
+
+
+    uint8_t speed_limit_to_decelerate = speed_config_selected[0]; // km/h
+    uint8_t speed_limit_to_accelerate = speed_config_selected[1]; // km/h
+    uint8_t speed_limit_to_brake      = speed_config_selected[2]; // km/h
+    uint8_t time_to_brake_s           = speed_config_selected[3]; // s
 
     prev_CT_signal = CT_signal;
     prev_FE_signal = FE_signal;
@@ -1968,7 +1980,7 @@ int main(void)
     HAL_GPIO_WritePin(REG_POWER_OK_C_GPIO_Port, REG_POWER_OK_C_Pin, RELAY_ENERGIZED);
 
     mount_filesystem(&fs);
-    Log_Event("SD started OK");
+    Log_Event("SD_START_OK");
     Log_Event("POWER_OK");
 
     // Start GPS Callback
@@ -1993,10 +2005,8 @@ int main(void)
     HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t *)adc_results_dma, adcChannelCount);
 
     I2C_Reset(&hi2c1);
-    i2c_state = HAL_I2C_GetState(&I2C_HANDLE);
-    printf("i2c_state is %d \n", i2c_state);
-    result = LedDriver_Init(&I2C_HANDLE);
-    printf("Led driver initializated \n");
+    HAL_I2C_GetState(&I2C_HANDLE);
+    LedDriver_Init(&I2C_HANDLE);    
 
     Led_Init();
 
