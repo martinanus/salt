@@ -19,7 +19,9 @@ const char* mqtt_user_name = "salt-ma";
 const char* mqtt_user_token = "1f05DXKCezK1hnck";
 
 const char* mqtt_suscribe_topic = "salt_remote_command";
-const char* mqtt_publish_topic = "salt_remote_log";
+const char* mqtt_publish_log_topic = "salt_remote_log";
+const char* mqtt_publish_ack_topic = "salt_remote_ack";
+
 
 
 WiFiClient wifi_client;
@@ -93,7 +95,7 @@ void mqtt_connect() {
   setDateTime();
 
   sprintf(mqttConnectBuf, "%s MQTT_CONNECTED_W_SSID: %s", dateTime, active_ssid);
-  mqtt_client.publish(mqtt_publish_topic, mqttConnectBuf);
+  mqtt_client.publish(mqtt_publish_log_topic, mqttConnectBuf);
   Serial.println(mqttConnectBuf);
 }
 
@@ -125,7 +127,7 @@ void sendDateTime(){
 
   setDateTime();
 
-  sprintf(datetimeCommand, "DATETIME:%s",dateTime);
+  sprintf(datetimeCommand, "0|DATETIME:%s",dateTime);
   
   Serial2.println(datetimeCommand);
   Serial.println(datetimeCommand);
@@ -170,7 +172,12 @@ void loop() {
 
     if (incomingByte == '\n') {
       uartRxBuffer[uartRxBufferIndex] = '\0';
-      mqtt_client.publish(mqtt_publish_topic, uartRxBuffer);
+      if (strncmp(uartRxBuffer, "ACK", 3) == 0) {
+        mqtt_client.publish(mqtt_publish_ack_topic, uartRxBuffer);
+      }
+      else{
+        mqtt_client.publish(mqtt_publish_log_topic, uartRxBuffer);
+      }      
       uartRxBufferIndex = 0;
     } else {
       if (uartRxBufferIndex < BUFFER_SIZE - 1) {
