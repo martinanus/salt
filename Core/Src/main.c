@@ -66,6 +66,7 @@ salt_mode_t salt_mode = MODO_NORMAL;
 salt_mode_t prev_salt_mode;
 char * salt_mode_labels[] = SALT_MODE_LABELS;
 
+uint32_t modo_limitado_activationMillis;
 
 uint8_t report_status_period_s = REPORT_STATUS_PERIOD_S;
 uint8_t command_validity_s = COMMAND_VALIDITY_INITIAL;
@@ -762,7 +763,7 @@ void Handle_SaltMode_Transition(void)
     {
 
         if (prev_salt_mode == MODO_LIMITADO)
-        {
+        {            
             Deactivate_SISBypass();
             buzzer_state = BUZZER_OFF;
             HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_NORMAL);
@@ -770,6 +771,7 @@ void Handle_SaltMode_Transition(void)
 
         if (salt_mode == MODO_LIMITADO)
         {
+            modo_limitado_activationMillis = HAL_GetTick();
             Activate_SISBypass();
             buzzer_state = BUZZER_ON_INTERMITENT;
             HAL_GPIO_WritePin(REG_MODO_LIMITADO_C_GPIO_Port, REG_MODO_LIMITADO_C_Pin, RELAY_ENERGIZED);
@@ -1688,9 +1690,10 @@ void Set_CriticalSignals_State(void)
     }
     else if (salt_mode == MODO_LIMITADO)
     {
+        currentMillis = HAL_GetTick();
 
         if (speed_source != SPEED_NONE)
-        {
+        {                        
 
             if (speed > speed_limit_to_decelerate)
             {
@@ -1706,7 +1709,7 @@ void Set_CriticalSignals_State(void)
                 buzzer_state = BUZZER_ON_INTERMITENT;
             }
 
-            currentMillis = HAL_GetTick();
+            
             if (FE_signal == SIGNAL_UNINTERFERED && speed > speed_limit_to_brake)
             {
 
@@ -1721,7 +1724,13 @@ void Set_CriticalSignals_State(void)
         }
         else
         {
-            Activate_ChopRoutine();
+            if (currentMillis - modo_limitado_activationMillis < MODO_LIMITADO_STARTING_BREAK_S * 1000){
+                CT_signal = SIGNAL_OPEN;
+                FE_signal = SIGNAL_OPEN;
+            } else{
+                Activate_ChopRoutine();
+            }
+            
         }
     }
     else if (salt_mode == MODO_TOTAL)

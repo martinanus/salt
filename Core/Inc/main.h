@@ -378,6 +378,7 @@ extern "C"
 
 #define SPEED_STOP 0.5            // km/h
 #define SPEED_READ_VALIDITY_S 3   // s
+#define MODO_LIMITADO_STARTING_BREAK_S 5 //s TODO 30secs!
 #define ZONE_READ_VALIDITY_S 60   // s
 #define KNOT_TO_KM_H_FACTOR 1.852 // multiplier factor
 #define BUZZER_SOUND_PERIOD_S 1   // s
