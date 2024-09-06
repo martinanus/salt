@@ -66,6 +66,8 @@ salt_mode_t salt_mode = MODO_NORMAL;
 salt_mode_t prev_salt_mode;
 char * salt_mode_labels[] = SALT_MODE_LABELS;
 
+
+uint8_t report_status_period_s = REPORT_STATUS_PERIOD_S;
 uint8_t command_validity_s = COMMAND_VALIDITY_INITIAL;
 uint8_t speed_configs[4] = SPEED_CONFIG_INITIAL;
 uint8_t chop_profile_config[5][4] = {
@@ -233,6 +235,7 @@ void Read_MALSwitchState(void);
 void Read_MATSwitchState(void);
 void Read_RemoteCommand(void);
 void Update_RTCDateTime(char *remote_command);
+void Update_ReportStatusPeriod(char *remote_command);
 void Update_CommandValidity(char *remote_command);
 void Update_SpeedConfig(char *remote_command);
 void Update_ChopConfig(char *remote_command);
@@ -263,6 +266,8 @@ void Activate_ChopRoutine(void);
 void Control_CriticalSignals(void);
 void Control_CTsignal(void);
 void Control_FEsignal(void);
+void Report_SystemStatus(void);
+
 
 /* USER CODE END PFP */
 
@@ -838,6 +843,10 @@ void Read_RemoteCommand(void)
         else if (strcmp(remote_command, "DATETIME") == 0)
         {
             Update_RTCDateTime(command_values + 1);
+        }        
+        else if (strcmp(remote_command, "REPORT_STATUS_PERIOD_CONFIG") == 0)
+        {
+            Update_ReportStatusPeriod(command_values + 1);
         }
         else if (strcmp(remote_command, "COMMAND_VALIDITY_CONFIG") == 0)
         {
@@ -896,6 +905,18 @@ void Update_RTCDateTime(char *remote_command)
     sDate.Year = year - 2000;
 
     HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+}
+
+
+void Update_ReportStatusPeriod(char *remote_command)
+{
+    int new_reportStatusPeriod;
+
+    sscanf(remote_command, "%d", &new_reportStatusPeriod);
+
+    report_status_period_s = new_reportStatusPeriod;
+    sprintf(local_log_buffer, "REPORT_STATUS_PERIOD: %d", report_status_period_s);
+    Log_Event(local_log_buffer);
 }
 
 void Update_CommandValidity(char *remote_command)
@@ -1878,6 +1899,27 @@ void Control_FEsignal(void)
     }
 }
 
+void Report_SystemStatus(void){
+    
+    static uint32_t last_reportSystemStatusMillis;
+    char buffer[MAX_BUFF_SIZE];
+    uint32_t currentMillis = HAL_GetTick();
+
+    if (currentMillis - last_reportSystemStatusMillis > report_status_period_s * 1000){
+        
+        if (salt_mode == MODO_LIMITADO){
+            snprintf(buffer, sizeof(buffer), "STATUS: MODO LIMITADO - %s\r\n", speed_source ? "" : "INTERMITENTE");    
+        } else {
+            snprintf(buffer, sizeof(buffer), "STATUS: %s\r\n", salt_mode_labels[salt_mode] );    
+        }
+        
+        Transmit_RemoteEvents(buffer);
+        printf(buffer);
+        
+        last_reportSystemStatusMillis = currentMillis;
+    }
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -1974,24 +2016,11 @@ int main(void)
         Display_SystemStatus();
         Set_CriticalSignals_State();
         Control_CriticalSignals();
+        Report_SystemStatus();
 
-        // ExecuteLocalCommands
-
+        
         HAL_Delay(500);
 
-        /*
-        if (ADC_ConvCplt){
-          for (int i=0; i<10;i++){
-            printf("Read value %d: 0x%.3x\r\n", i, adc_results_dma[i]);
-          }
-          ADC_ConvCplt = 0;
-
-        }
-
-        printf("Speed is: %f according to source %d \r\n", speed, speed_source);
-        for (int i=0; i<4;i++){
-          printf("Speed digit %d is: %d with decimal %d\r\n",i, speed_display[i].digit, speed_display[i].decimal_point);
-        }*/
     }
     /* USER CODE END 3 */
 }
