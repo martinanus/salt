@@ -13,12 +13,14 @@ mqtt_user_token = "1f05DXKCezK1hnck"
 # mqtt_user_token = "F6EXqH8wRkBnjmn4"
 
 
-mqtt_suscribe_topic = "salt_remote_log"
+mqtt_suscribe_log_topic = "salt_remote_log"
+mqtt_suscribe_ack_topic = "salt_remote_ack"
 mqtt_publish_topic = "salt_remote_command"
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
-    client.subscribe(mqtt_suscribe_topic)
+    client.subscribe(mqtt_suscribe_log_topic)
+    client.subscribe(mqtt_suscribe_ack_topic)
     print(f"{mqtt_publisher_name} connected to server {mqttt_server}")
 
 
