@@ -415,6 +415,15 @@ extern "C"
 #define REG_CT_C_Pin REG_4_C_Pin
 #define REG_CT_C_GPIO_Port REG_4_C_GPIO_Port
 
+#define REG_MODO_LIMITADO_M_Pin REG_1_M_Pin
+#define REG_MODO_LIMITADO_M_GPIO_Port REG_1_M_GPIO_Port
+#define REG_POWER_OK_M_Pin REG_2_M_Pin
+#define REG_POWER_OK_M_GPIO_Port REG_2_M_GPIO_Port
+#define REG_FE_M_Pin REG_3_M_Pin
+#define REG_FE_M_GPIO_Port REG_3_M_GPIO_Port
+#define REG_CT_M_Pin REG_4_M_Pin
+#define REG_CT_M_GPIO_Port REG_4_M_GPIO_Port
+
     /* USER CODE END Private defines */
 
 #ifdef __cplusplus
