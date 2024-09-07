@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.gs": "javascript",
+        "led_driver.h": "c",
+        "globals.h": "c",
+        "fatfs.h": "c"
+    }
+}
