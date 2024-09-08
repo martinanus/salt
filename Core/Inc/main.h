@@ -23,20 +23,19 @@
 #define __MAIN_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 
-    /* Private includes ----------------------------------------------------------*/
-    /* USER CODE BEGIN Includes */
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
 
-    /* USER CODE END Includes */
+/* USER CODE END Includes */
 
-    /* Exported types ------------------------------------------------------------*/
-    /* USER CODE BEGIN ET */
+/* Exported types ------------------------------------------------------------*/
+/* USER CODE BEGIN ET */
     typedef enum
     {
         MODO_NORMAL = 0,
@@ -172,20 +171,20 @@ extern "C"
         CHOP_BRAKING = 4
 
     } chop_state_t;
-    /* USER CODE END ET */
+/* USER CODE END ET */
 
-    /* Exported constants --------------------------------------------------------*/
-    /* USER CODE BEGIN EC */
+/* Exported constants --------------------------------------------------------*/
+/* USER CODE BEGIN EC */
 
-    /* USER CODE END EC */
+/* USER CODE END EC */
 
-    /* Exported macro ------------------------------------------------------------*/
-    /* USER CODE BEGIN EM */
+/* Exported macro ------------------------------------------------------------*/
+/* USER CODE BEGIN EM */
 
-    /* USER CODE END EM */
+/* USER CODE END EM */
 
-    /* Exported functions prototypes ---------------------------------------------*/
-    void Error_Handler(void);
+/* Exported functions prototypes ---------------------------------------------*/
+void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 
@@ -350,7 +349,7 @@ extern "C"
 #define LD2_Pin GPIO_PIN_7
 #define LD2_GPIO_Port GPIOB
 
-    /* USER CODE BEGIN Private defines */
+/* USER CODE BEGIN Private defines */
 
 #define LOCAL_SERIAL_UART_HANDLE huart3
 #define WIFI_UART_HANDLE huart4
@@ -424,7 +423,7 @@ extern "C"
 #define REG_CT_M_Pin REG_4_M_Pin
 #define REG_CT_M_GPIO_Port REG_4_M_GPIO_Port
 
-    /* USER CODE END Private defines */
+/* USER CODE END Private defines */
 
 #ifdef __cplusplus
 }
