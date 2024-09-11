@@ -60,6 +60,7 @@ extern FATFS fs;
 extern const char *local_log_file_name ;
 extern volatile uint16_t adc_results_dma[10];
 extern volatile uint8_t ADC_ConvCplt;
+extern const int adcChannelCount;
 extern float speed;
 extern float hasler_speed;
 extern float pulse_generator_speed;

@@ -1,6 +1,7 @@
 #include "globals.h"
 
 /*
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 void GPS_UART_Callback(UART_HandleTypeDef *huart);
 void WIFI_UART_Callback(UART_HandleTypeDef *huart);
 void Transmit_RemoteEvents(const char *buffer);
@@ -9,6 +10,14 @@ void Log_Event(const char *event);
 void Report_SystemStatus(void);
 */
 
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+{
+    if (hadc->Instance == ADC3)
+    {
+        ADC_ConvCplt = 1;
+        HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t *)adc_results_dma, adcChannelCount);
+    }
+}
 
 void GPS_UART_Callback(UART_HandleTypeDef *huart)
 {
