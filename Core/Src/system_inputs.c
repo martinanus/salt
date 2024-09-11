@@ -5,9 +5,8 @@ void Read_SystemStatus(void);
 void Read_Speed(void);
 void Read_HaslerSpeed(void);
 void Read_PulseGeneratorSpeed(void);
-void Read_GPSSpeed(void);
-void Read_CurrentZone(void);
-void Read_GPSStatus(void);
+void Check_GPSData_Validity(void);
+void Process_GPSline(void);
 void Read_SISStatus(void);
 void Read_ActivationSwitchState(void);
 void Read_MALSwitchState(void);
@@ -16,9 +15,8 @@ void Read_MATSwitchState(void);
 
 void Read_SystemStatus(void)
 {
+    Check_GPSData_Validity();
     Read_Speed();
-    Read_CurrentZone();
-    Read_GPSStatus();
     Read_SISStatus();
     Read_LocalCommand();
 }
@@ -27,7 +25,6 @@ void Read_Speed(void)
 {
     Read_HaslerSpeed();
     Read_PulseGeneratorSpeed();
-    Read_GPSSpeed();
 
     prev_speed_source = speed_source;
     prev_speed = speed;
@@ -111,39 +108,20 @@ void Read_PulseGeneratorSpeed(void)
     }
 }
 
-void Read_GPSSpeed(void)
-{
-    uint32_t currentMillis;
-    if (GPSnew_line)
-    {
-        parse_GPRMC((char *)GPSline, &gprms);
-        if (gprms.status == 'A')
-        {
-            print_GPRMC(&gprms);
-            gps_speed = gprms.speed * KNOT_TO_KM_H_FACTOR;
-        }
-        else
-        {
-            gps_speed = -1;
-        }
-        GPSnew_line = 0;
-    }
-    currentMillis = HAL_GetTick();
-    if (currentMillis - gps_dataMillis > SPEED_READ_VALIDITY_S * 1000)
-    {
-        gps_speed = -1;
-    }
-}
-
-void Read_CurrentZone(void)
+void Process_GPSline(void)
 {
     double distance_from_origin;
     dd_location_d current_point;
-    uint32_t currentMillis;
+
+    prev_gps_status = gps_status;
     prev_zone = current_zone;
 
+    parse_GPRMC((char *)GPSrxBuff, &gprms);
     if (gprms.status == 'A')
     {
+        gps_status = STATUS_OK;
+        gps_speed = gprms.speed * KNOT_TO_KM_H_FACTOR;
+
         current_point = convert_dms_to_decimal(gprms.latitude, gprms.longitude);
         distance_from_origin = haversine_distance(current_point, origin_point);
 
@@ -162,13 +140,15 @@ void Read_CurrentZone(void)
     }
     else
     {
+        gps_status = STATUS_ERROR;
+        gps_speed = -1;
         current_zone = NO_ZONE;
     }
 
-    currentMillis = HAL_GetTick();
-    if (currentMillis - gps_dataMillis > ZONE_READ_VALIDITY_S * 1000)
+    if (gps_status != prev_gps_status)
     {
-        current_zone = NO_ZONE;
+        sprintf(local_log_buffer, "GPS_STATUS: %s ", gps_status ? "NOT_CONNECTED" : "OK");
+        Log_Event(local_log_buffer);
     }
 
     if (current_zone != prev_zone)
@@ -178,25 +158,19 @@ void Read_CurrentZone(void)
     }
 }
 
-void Read_GPSStatus(void)
+void Check_GPSData_Validity(void)
 {
-    prev_gps_status = gps_status;
+    uint32_t currentMillis;
 
-    if (gprms.status == 'A')
-    {
-        gps_status = STATUS_OK;
-    }
-    else
+    currentMillis = HAL_GetTick();
+    if (currentMillis - gps_dataMillis > SPEED_READ_VALIDITY_S * 1000)
     {
         gps_status = STATUS_ERROR;
-    }
-
-    if (gps_status != prev_gps_status)
-    {
-        sprintf(local_log_buffer, "GPS_STATUS: %s ", gps_status ? "NOT_CONNECTED" : "OK");
-        Log_Event(local_log_buffer);
+        gps_speed = -1;
+        current_zone = NO_ZONE;
     }
 }
+
 
 void Read_SISStatus(void)
 {

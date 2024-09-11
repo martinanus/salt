@@ -34,10 +34,9 @@ void GPS_UART_Callback(UART_HandleTypeDef *huart)
             GPSrxBuff[GPSidx++] = '\r';
             GPSrxBuff[GPSidx++] = '\n';
             GPSrxBuff[GPSidx++] = '\0';
-            memcpy(GPSline, GPSrxBuff, GPSidx);
-            GPSnew_line = 1;
-            GPSrxBuff[0] = 0;
             gps_dataMillis = HAL_GetTick();
+            Process_GPSline();
+            GPSrxBuff[0] = 0;            
             // printf("GPS: %s\r\n", GPSline);
         }
         else
@@ -87,9 +86,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     {
         rs485_1_rxBuff[rs485_1_idx++] = rs485_1_charRead;
 
-        if (rs485_1_charRead == 0x7E)
+        if (rs485_1_charRead == HASLER_INITIAL_STOP_BYTE)
         {
-            if (rs485_1_idx == 31)
+            if (rs485_1_idx == HASLER_FRAME_LENGTH)
             {
                 memcpy(rs485_1_line, rs485_1_rxBuff, rs485_1_idx);
                 rs485_1_line[rs485_1_idx] = '\0';
@@ -100,7 +99,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
                 rs485_1_idx = 0;
                 // printf("rs485_1: %s\r\n", rs485_1_line);
             }
-            else if (rs485_1_idx > 31)
+            else if (rs485_1_idx > HASLER_FRAME_LENGTH)
             {
                 rs485_1_rxBuff[0] = '\0';
                 rs485_1_idx = 0;
@@ -176,8 +175,6 @@ void Reset_GPS_Power(void)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPS_PW_ON_GPIO_Port, &GPIO_InitStruct);
 
-    // TO BE IMPLEMENTED - check if this can be async delay
-    // Using timer or freeRTOS
     HAL_Delay(300);
 
     GPIO_InitStruct.Pin = GPS_PW_ON_Pin;

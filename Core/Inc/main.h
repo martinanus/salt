@@ -368,6 +368,8 @@ void Error_Handler(void);
 #define ADC_HANDLE hadc3
 #define SIS_FAIL_THRESHOLD 0x030 // 5v-3v3=0x057 3v3=0x078 5v=0x0C0 V in SIS input
 
+#define HASLER_INITIAL_STOP_BYTE 0x7E
+#define HASLER_FRAME_LENGTH 31
 #define HASLER_SPEED_BYTE 6
 
 #define MAX_LOG_LENGTH 256

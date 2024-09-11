@@ -63,7 +63,10 @@ UART_HandleTypeDef huart7;
 UART_HandleTypeDef huart8;
 UART_HandleTypeDef huart3;
 
-osThreadId mainTaskHandle;
+osThreadId modeTransTaskHandle;
+osThreadId systemTaskHandle;
+osThreadId criticalSigTaskHandle;
+osThreadId reportTaskHandle;
 /* USER CODE BEGIN PV */
 
 salt_mode_t salt_mode = MODO_NORMAL;
@@ -225,7 +228,10 @@ static void MX_UART5_Init(void);
 static void MX_UART7_Init(void);
 static void MX_UART8_Init(void);
 static void MX_USB_OTG_FS_USB_Init(void);
-void StartMainTask(void const * argument);
+void StartModeTransTask(void const * argument);
+void StartSystemTask(void const * argument);
+void StartCriticalSigTask(void const * argument);
+void StartReportTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -340,9 +346,21 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* definition and creation of mainTask */
-  osThreadDef(mainTask, StartMainTask, osPriorityNormal, 0, 2048);
-  mainTaskHandle = osThreadCreate(osThread(mainTask), NULL);
+  /* definition and creation of modeTransTask */
+  osThreadDef(modeTransTask, StartModeTransTask, osPriorityNormal, 0, 1024);
+  modeTransTaskHandle = osThreadCreate(osThread(modeTransTask), NULL);
+
+  /* definition and creation of systemTask */
+  osThreadDef(systemTask, StartSystemTask, osPriorityNormal, 0, 1024);
+  systemTaskHandle = osThreadCreate(osThread(systemTask), NULL);
+
+  /* definition and creation of criticalSigTask */
+  osThreadDef(criticalSigTask, StartCriticalSigTask, osPriorityNormal, 0, 256);
+  criticalSigTaskHandle = osThreadCreate(osThread(criticalSigTask), NULL);
+
+  /* definition and creation of reportTask */
+  osThreadDef(reportTask, StartReportTask, osPriorityLow, 0, 256);
+  reportTaskHandle = osThreadCreate(osThread(reportTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -1092,31 +1110,87 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartMainTask */
+/* USER CODE BEGIN Header_StartModeTransTask */
 /**
-  * @brief  Function implementing the mainTask thread.
+  * @brief  Function implementing the modeTransTask thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartMainTask */
-void StartMainTask(void const * argument)
+/* USER CODE END Header_StartModeTransTask */
+void StartModeTransTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
   for(;;)
   {
-	printf("Starting task...\r\n");
+    
     Handle_SaltMode_Transition();
 
-    Read_SystemStatus();
-    Display_SystemStatus();
-    Set_CriticalSignals_State();
-    Control_CriticalSignals();
-    //Report_SystemStatus();
-
-    osDelay(500);
+    osDelay(200);
   }
   /* USER CODE END 5 */
+}
+
+/* USER CODE BEGIN Header_StartSystemTask */
+/**
+* @brief Function implementing the systemTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartSystemTask */
+void StartSystemTask(void const * argument)
+{
+  /* USER CODE BEGIN StartSystemTask */
+  /* Infinite loop */
+  for(;;)
+  {    
+    Read_SystemStatus();
+    Display_SystemStatus();
+
+    osDelay(200);
+  }
+  /* USER CODE END StartSystemTask */
+}
+
+/* USER CODE BEGIN Header_StartCriticalSigTask */
+/**
+* @brief Function implementing the criticalSigTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartCriticalSigTask */
+void StartCriticalSigTask(void const * argument)
+{
+  /* USER CODE BEGIN StartCriticalSigTask */
+  /* Infinite loop */
+  for(;;)
+  {
+   
+    Set_CriticalSignals_State();
+    Control_CriticalSignals();
+
+    osDelay(200);
+  }
+  /* USER CODE END StartCriticalSigTask */
+}
+
+/* USER CODE BEGIN Header_StartReportTask */
+/**
+* @brief Function implementing the reportTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartReportTask */
+void StartReportTask(void const * argument)
+{
+  /* USER CODE BEGIN StartReportTask */
+  /* Infinite loop */
+  for(;;)
+  {    
+    Report_SystemStatus();
+    osDelay(report_status_period_s * 1000);
+  }
+  /* USER CODE END StartReportTask */
 }
 
 /**
