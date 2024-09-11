@@ -1,8 +1,8 @@
 #include "globals.h"
 
 /*
-void Read_LocalCommand(void);
-void Read_RemoteCommand(void);
+void Process_LocalSerialLine(void)
+void Process_WIFIline(void);
 void Update_RTCDateTime(char *remote_command);
 void Update_ReportStatusPeriod(char *remote_command);
 void Update_CommandValidity(char *remote_command);
@@ -10,109 +10,99 @@ void Update_SpeedConfig(char *remote_command);
 void Update_ChopConfig(char *remote_command);
 void Select_ChopProfile(char *remote_command);
 void Send_CommandAcknoledge(int id);
+void Check_RemoteCommand_Validity(void);
 */
 
-
-void Read_LocalCommand(void)
+void Process_LocalSerialLine(void)
 {
-    if (localSerial_new_line)
+    if (strcmp(localSerial_rxBuff, "DOWNLOAD_LOGS") == 0)
     {
-        if (strcmp(localSerial_line, "DOWNLOAD_LOGS") == 0)
-        {
-            Log_Event("LOCAL_LOG_DOWNLOAD_START");
-            read_file_line_by_line(local_log_file_name, &LOCAL_SERIAL_UART_HANDLE);
-            Log_Event("LOCAL_LOG_DOWNLOAD_FINISH");
-        }
-
-        localSerial_new_line = 0;
+        Log_Event("LOCAL_LOG_DOWNLOAD_START");
+        read_file_line_by_line(local_log_file_name, &LOCAL_SERIAL_UART_HANDLE);
+        Log_Event("LOCAL_LOG_DOWNLOAD_FINISH");
     }
 }
 
-void Read_RemoteCommand(void)
+void Process_WIFIline(void)
 {
-    uint32_t currentMillis;
     int id;
-
     char *command_values;
 
-    if (WIFInew_line)
+    sscanf(WIFIrxBuff, "%d|%[^:]", &id, remote_command);
+    command_values = strchr(WIFIrxBuff, ':');
+
+    if (id)
     {
+        snprintf(local_log_buffer, sizeof(local_log_buffer), "COMMAND_RECEIVED: %s", remote_command);
+        Log_Event(local_log_buffer);
+        Send_CommandAcknoledge(id);
+    }
 
-        sscanf(WIFIline, "%d|%[^:]", &id, remote_command);
-        command_values = strchr(WIFIline, ':');
+    if (strcmp(remote_command, "AISLADO_TOTAL") == 0)
+    {
+        remote_command_active = COMMAND_ACTIVE;
+        remote_command_Millis = HAL_GetTick();
+    }
+    else if (strcmp(remote_command, "PARADA_TOTAL") == 0)
+    {
+        remote_command_active = COMMAND_ACTIVE;
+        remote_command_Millis = HAL_GetTick();
+    }
+    else if (strcmp(remote_command, "COCHE_DERIVA") == 0)
+    {
+        remote_command_active = COMMAND_ACTIVE;
+        remote_command_Millis = HAL_GetTick();
+    }
+    else if (strcmp(remote_command, "INTERMITENTE") == 0)
+    {
+        Select_ChopProfile(command_values + 1);
+        remote_command_active = COMMAND_ACTIVE;
+        remote_command_Millis = HAL_GetTick();
+    }
+    else if (strcmp(remote_command, "CANCEL") == 0)
+    {
+        remote_command_active = COMMAND_INACTIVE;
+        Log_Event("REMOTE_COMMANDS_CANCELED");
+    }
+    else if (strcmp(remote_command, "DATETIME") == 0)
+    {
+        Update_RTCDateTime(command_values + 1);
+    }
+    else if (strcmp(remote_command, "REPORT_STATUS_PERIOD_CONFIG") == 0)
+    {
+        Update_ReportStatusPeriod(command_values + 1);
+    }
+    else if (strcmp(remote_command, "COMMAND_VALIDITY_CONFIG") == 0)
+    {
+        Update_CommandValidity(command_values + 1);
+    }
+    else if (strcmp(remote_command, "SPEED_CONFIG") == 0)
+    {
+        Update_SpeedConfig(command_values + 1);
+    }
+    else if (strcmp(remote_command, "INTERMITENTE_CONFIG") == 0)
+    {
+        Update_ChopConfig(command_values + 1);
+    }
+    else if (strcmp(remote_command, "DOWNLOAD_LOGS") == 0)
+    {
+        Log_Event("REMOTE_LOG_DOWNLOAD_START");
+        read_file_line_by_line(local_log_file_name, &WIFI_UART_HANDLE);
+        Log_Event("REMOTE_LOG_DOWNLOAD_FINISH");
+    }
+}
 
-        if (id)
-        {
-            snprintf(local_log_buffer, sizeof(local_log_buffer), "COMMAND_RECEIVED: %s", remote_command);
-            Log_Event(local_log_buffer);
-            Send_CommandAcknoledge(id);
-        }
+void Check_RemoteCommand_Validity(void)
+{
+    uint32_t currentMillis;
 
-        if (strcmp(remote_command, "AISLADO_TOTAL") == 0)
-        {
-            remote_command_active = COMMAND_ACTIVE;
-            remote_command_Millis = HAL_GetTick();
-        }
-        else if (strcmp(remote_command, "PARADA_TOTAL") == 0)
-        {
-            remote_command_active = COMMAND_ACTIVE;
-            remote_command_Millis = HAL_GetTick();
-        }
-        else if (strcmp(remote_command, "COCHE_DERIVA") == 0)
-        {
-            remote_command_active = COMMAND_ACTIVE;
-            remote_command_Millis = HAL_GetTick();
-        }
-        else if (strcmp(remote_command, "INTERMITENTE") == 0)
-        {
-            Select_ChopProfile(command_values + 1);
-            remote_command_active = COMMAND_ACTIVE;
-            remote_command_Millis = HAL_GetTick();
-        }
-        else if (strcmp(remote_command, "CANCEL") == 0)
+    currentMillis = HAL_GetTick();
+    if (currentMillis - remote_command_Millis > command_validity_s * 1000)
+    {
+        if (remote_command_active == COMMAND_ACTIVE)
         {
             remote_command_active = COMMAND_INACTIVE;
-            Log_Event("REMOTE_COMMANDS_CANCELED");
-        }
-        else if (strcmp(remote_command, "DATETIME") == 0)
-        {
-            Update_RTCDateTime(command_values + 1);
-        }
-        else if (strcmp(remote_command, "REPORT_STATUS_PERIOD_CONFIG") == 0)
-        {
-            Update_ReportStatusPeriod(command_values + 1);
-        }
-        else if (strcmp(remote_command, "COMMAND_VALIDITY_CONFIG") == 0)
-        {
-            Update_CommandValidity(command_values + 1);
-        }
-        else if (strcmp(remote_command, "SPEED_CONFIG") == 0)
-        {
-            Update_SpeedConfig(command_values + 1);
-        }
-        else if (strcmp(remote_command, "INTERMITENTE_CONFIG") == 0)
-        {
-            Update_ChopConfig(command_values + 1);
-        }
-        else if (strcmp(remote_command, "DOWNLOAD_LOGS") == 0)
-        {
-            Log_Event("REMOTE_LOG_DOWNLOAD_START");
-            read_file_line_by_line(local_log_file_name, &WIFI_UART_HANDLE);
-            Log_Event("REMOTE_LOG_DOWNLOAD_FINISH");
-        }
-
-        WIFInew_line = 0;
-    }
-    else
-    {
-        currentMillis = HAL_GetTick();
-        if (currentMillis - remote_command_Millis > command_validity_s * 1000)
-        {
-            if (remote_command_active == COMMAND_ACTIVE)
-            {
-                remote_command_active = COMMAND_INACTIVE;
-                Log_Event("REMOTE_COMMAND_EXPIRED");
-            }
+            Log_Event("REMOTE_COMMAND_EXPIRED");
         }
     }
 }
@@ -207,8 +197,6 @@ void Select_ChopProfile(char *remote_command)
         }
     }
 }
-
-
 
 void Send_CommandAcknoledge(int id)
 {

@@ -3,8 +3,10 @@
 /*
 void Read_SystemStatus(void);
 void Read_Speed(void);
-void Read_HaslerSpeed(void);
-void Read_PulseGeneratorSpeed(void);
+void Process_RS485_1_line(void)
+void Check_Hasler_Validity(void)
+void Process_RS485_2_line(void);
+void Check_PulseGenerator_Validity(void);
 void Check_GPSData_Validity(void);
 void Process_GPSline(void);
 void Read_SISStatus(void);
@@ -18,13 +20,12 @@ void Read_SystemStatus(void)
     Check_GPSData_Validity();
     Read_Speed();
     Read_SISStatus();
-    Read_LocalCommand();
 }
 
 void Read_Speed(void)
 {
-    Read_HaslerSpeed();
-    Read_PulseGeneratorSpeed();
+    Check_Hasler_Validity();
+    Check_PulseGenerator_Validity();
 
     prev_speed_source = speed_source;
     prev_speed = speed;
@@ -65,18 +66,14 @@ void Read_Speed(void)
         }
     }
 }
+void Process_RS485_1_line(void)
+{
+    hasler_speed = rs485_1_rxBuff[HASLER_SPEED_BYTE];
+}
 
-void Read_HaslerSpeed(void)
+void Check_Hasler_Validity(void)
 {
     uint32_t currentMillis;
-
-    if (rs485_1_new_line)
-    {
-
-        hasler_speed = rs485_1_line[HASLER_SPEED_BYTE];
-
-        rs485_1_new_line = 0;
-    }
 
     currentMillis = HAL_GetTick();
     if (currentMillis - rs485_1_dataMillis > SPEED_READ_VALIDITY_S * 1000)
@@ -85,21 +82,22 @@ void Read_HaslerSpeed(void)
     }
 }
 
-void Read_PulseGeneratorSpeed(void)
+
+void Process_RS485_2_line(void)
+{
+    char *pEnd;
+
+    pulse_generator_speed = strtof(rs485_2_rxBuff, &pEnd);
+
+    if (pEnd == rs485_2_rxBuff)
+    {
+        pulse_generator_speed = -1;
+    }
+}
+
+void Check_PulseGenerator_Validity(void)
 {
     uint32_t currentMillis;
-    char *pEnd;
-    if (rs485_2_new_line)
-    {
-
-        pulse_generator_speed = strtof(rs485_2_line, &pEnd);
-        if (pEnd == rs485_2_line)
-        {
-            pulse_generator_speed = -1;
-        }
-
-        rs485_2_new_line = 0;
-    }
 
     currentMillis = HAL_GetTick();
     if (currentMillis - rs485_2_dataMillis > SPEED_READ_VALIDITY_S * 1000)
@@ -170,7 +168,6 @@ void Check_GPSData_Validity(void)
         current_zone = NO_ZONE;
     }
 }
-
 
 void Read_SISStatus(void)
 {

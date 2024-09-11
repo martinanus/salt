@@ -93,37 +93,27 @@ uint8_t chop_profile_config[5][4] = {
 };
 
 char WIFIrxBuff[MAX_BUFFER_LENGTH];
-char WIFIline[MAX_BUFFER_LENGTH];
 uint8_t WIFIcharRead;
 uint8_t WIFIidx;
-uint8_t WIFInew_line;
 
 char GPSrxBuff[MAX_COMMAND_LENGTH];
-char GPSline[MAX_BUFFER_LENGTH];
 uint8_t GPScharRead;
 uint8_t GPSidx;
-uint8_t GPSnew_line;
 uint32_t gps_dataMillis = 0;
 
 char rs485_1_rxBuff[MAX_BUFFER_LENGTH];
-char rs485_1_line[MAX_BUFFER_LENGTH];
 uint8_t rs485_1_charRead;
 uint8_t rs485_1_idx;
-uint8_t rs485_1_new_line;
 uint32_t rs485_1_dataMillis = 0;
 
 char rs485_2_rxBuff[MAX_BUFFER_LENGTH];
-char rs485_2_line[MAX_BUFFER_LENGTH];
 uint8_t rs485_2_charRead;
 uint8_t rs485_2_idx;
-uint8_t rs485_2_new_line;
 uint32_t rs485_2_dataMillis = 0;
 
 char localSerial_rxBuff[MAX_BUFFER_LENGTH];
-char localSerial_line[MAX_BUFFER_LENGTH];
 uint8_t localSerial_charRead;
 uint8_t localSerial_idx;
-uint8_t localSerial_new_line;
 
 char GPSsentence[] = {"$GPRMC"};
 struct GPRMC gprms = {

@@ -9,7 +9,7 @@ void Handle_SaltMode_Transition(void)
     prev_salt_mode = salt_mode;
 
     Read_ActivationSwitchState();
-    Read_RemoteCommand();
+    Check_RemoteCommand_Validity();
 
     if (internal_error == STATUS_ERROR)
     {
