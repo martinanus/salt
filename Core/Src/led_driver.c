@@ -10,7 +10,7 @@
 void I2C_Reset(I2C_HandleTypeDef *hi2c)
 {
     __HAL_RCC_I2C1_FORCE_RESET();
-    HAL_Delay(1); // Small delay
+    //HAL_Delay(1); // Small delay
     __HAL_RCC_I2C1_RELEASE_RESET();
 
     // Reinitialize the I2C peripheral
