@@ -237,6 +237,42 @@ int _write(int file, char *ptr, int len)
     return len;
 }
 
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+{
+    if (hadc->Instance == ADC3)
+    {
+        ADC_ConvCplt = 1;
+        HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t *)adc_results_dma, adcChannelCount);
+    }
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
+{
+    static uint32_t previousMillis = 0;
+    uint32_t currentMillis;
+
+    if (GPIO_PIN == CHOP_SEL_Pin)
+    {
+        if (salt_mode == MODO_LIMITADO)
+        {
+            currentMillis = HAL_GetTick();
+            if (currentMillis - previousMillis > BTN_DEBOUNCE_MS)
+            {
+                if (chop_profile == CHOP_PROFILE_4)
+                {
+                    chop_profile = CHOP_PROFILE_0;
+                }
+                else
+                {
+                    chop_profile++;
+                }
+                sprintf(local_log_buffer, "CHOP_PROFILE_%d", chop_profile + 1);
+                Log_Event(local_log_buffer);
+                previousMillis = currentMillis;
+            }
+        }
+    }
+}
 
 /* USER CODE END 0 */
 
