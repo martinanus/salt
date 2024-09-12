@@ -1,6 +1,6 @@
 #include "globals.h"
 
-/*
+
 void Led_Init(void);
 void Display_SystemStatus(void);
 void Build_SystemStatus(void);
@@ -15,8 +15,30 @@ void setDigit7_regValue(void);
 void Control_Buzzer(void);
 void Send_SystemStatus(void);
 void Activate_ZoneRelay(void);
-*/
 
+
+// RGB
+static rgb_led_state_t zone_led;
+
+// only set RG
+static rgb_led_state_t SIS_leds[5];
+static rgb_led_state_t mode_MAL_led;
+static rgb_led_state_t mode_MAT_led;
+static rgb_led_state_t active_command_led;
+static rgb_led_state_t gps_led;
+
+// Green leds
+static led_state_t power_led;
+static led_state_t CT_led;
+static led_state_t FE_led;
+static led_state_t chop_profile_leds[5];
+
+static uint8_t digit4_reg_value;
+static uint8_t digit5_reg_value;
+static uint8_t digit6_reg_value;
+static uint8_t digit7_reg_value;
+
+static uint8_t digit7Segment[4];
 
 
 void Led_Init()
@@ -483,6 +505,10 @@ void Control_Buzzer(void)
 
 void Activate_ZoneRelay(void)
 {
+	static relay_state_t zone_relay;
+	relay_state_t prev_zone_relay;
+
+
     prev_zone_relay = zone_relay;
 
     if (current_zone == ZONE_3)

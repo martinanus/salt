@@ -359,13 +359,11 @@ void Error_Handler(void);
 #define DEBUG_UART_HANDLE huart3
 #define ADC_HANDLE hadc3
 #define I2C_HANDLE hi2c1
-#define SPI_HANDLE hspi4
 #define RTC_HANDLE hrtc
-
 #define SD_SPI_HANDLE hspi4
+
 #define SD_CS_GPIO_Port GPIOE
 #define SD_CS_Pin GPIO_PIN_11
-#define ADC_HANDLE hadc3
 #define SIS_FAIL_THRESHOLD 0x030 // 5v-3v3=0x057 3v3=0x078 5v=0x0C0 V in SIS input
 
 #define HASLER_INITIAL_STOP_BYTE 0x7E

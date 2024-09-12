@@ -1,26 +1,49 @@
 #include "globals.h"
 
-/*
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc);
 void GPS_UART_Callback(UART_HandleTypeDef *huart);
 void WIFI_UART_Callback(UART_HandleTypeDef *huart);
 void Transmit_RemoteEvents(const char *buffer);
 void Reset_GPS_Power(void);
 void Log_Event(const char *event);
 void Report_SystemStatus(void);
-*/
 
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
-{
-    if (hadc->Instance == ADC3)
-    {
-        ADC_ConvCplt = 1;
-        HAL_ADC_Start_DMA(&ADC_HANDLE, (uint32_t *)adc_results_dma, adcChannelCount);
-    }
+
+static const char GPSsentence[] = {"$GPRMC"};
+
+static uint8_t WIFIcharRead;
+static uint8_t GPScharRead;
+static uint8_t rs485_1_charRead;
+static uint8_t rs485_2_charRead;
+static uint8_t localSerial_charRead;
+
+
+void Init_Communications(void){
+    // Start GPS Callback
+    HAL_UART_RegisterCallback(&GPS_UART_HANDLE, HAL_UART_RX_COMPLETE_CB_ID, GPS_UART_Callback);
+    HAL_UART_Receive_IT(&GPS_UART_HANDLE, &GPScharRead, 1);
+
+    // Start WIFI Callback
+    HAL_GPIO_WritePin(ESP_EN_GPIO_Port, ESP_EN_Pin, 1);
+    HAL_UART_RegisterCallback(&WIFI_UART_HANDLE, HAL_UART_RX_COMPLETE_CB_ID, WIFI_UART_Callback);
+    HAL_UART_Receive_IT(&WIFI_UART_HANDLE, &WIFIcharRead, 1);
+
+    // Start RS_485 communication
+    HAL_GPIO_WritePin(RS485_1_DIR_GPIO_Port, RS485_1_DIR_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(RS485_2_DIR_GPIO_Port, RS485_2_DIR_Pin, GPIO_PIN_RESET);
+    HAL_UART_Receive_IT(&RS485_1_UART_HANDLE, &rs485_1_charRead, 1);
+    HAL_UART_Receive_IT(&RS485_2_UART_HANDLE, &rs485_2_charRead, 1);
+
+    // Start local serial communication
+    HAL_UART_Receive_IT(&LOCAL_SERIAL_UART_HANDLE, &localSerial_charRead, 1);
+
 }
 
 void GPS_UART_Callback(UART_HandleTypeDef *huart)
 {
+    static uint8_t GPSidx = 0;
+
     if (GPScharRead == '$' || GPSidx == 100)
     {
         GPSidx = 0;
@@ -54,6 +77,8 @@ void GPS_UART_Callback(UART_HandleTypeDef *huart)
 
 void WIFI_UART_Callback(UART_HandleTypeDef *huart)
 {
+    static uint8_t WIFIidx = 0;
+
     if (WIFIcharRead == '\r' || WIFIcharRead == '\n')
     {
         if (WIFIidx > 0)
@@ -80,6 +105,10 @@ void clearBuffer(char *buffer, size_t size)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
+    static uint8_t rs485_1_idx = 0;
+    static uint8_t rs485_2_idx = 0;
+    static uint8_t localSerial_idx = 0;
+
     if (huart->Instance == RS485_1_UART_HANDLE.Instance)
     {
         rs485_1_rxBuff[rs485_1_idx++] = rs485_1_charRead;

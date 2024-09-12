@@ -1,6 +1,6 @@
 #include "globals.h"
 
-/*
+
 void Activate_SISBypass(void);
 void Deactivate_SISBypass(void);
 void Set_CriticalSignals_State(void);
@@ -8,7 +8,11 @@ void Activate_ChopRoutine(void);
 void Control_CriticalSignals(void);
 void Control_CTsignal(void);
 void Control_FEsignal(void);
-*/
+
+
+static const char *critical_signal_state_labels[] = CRITICAL_SIGNAL_STATE_LABELS;
+static critical_signal_state_t prev_CT_signal;
+static critical_signal_state_t prev_FE_signal;
 
 
 void Activate_SISBypass(void)

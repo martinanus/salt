@@ -1,11 +1,11 @@
 #include "globals.h"
 
-/*
+
 void WriteCheck_RelayState(GPIO_TypeDef *WritecGPIOx, uint16_t Write_GPIO_Pin, GPIO_PinState PinState,
                            GPIO_TypeDef *Read_GPIOx, uint16_t Read_GPIO_Pin);
 void Test_ActivateRelays(void);
 void Test_WriteCheckRelays(void);
-*/
+
 
 void WriteCheck_RelayState(GPIO_TypeDef *WritecGPIOx, uint16_t Write_GPIO_Pin, GPIO_PinState WritePinState,
                            GPIO_TypeDef *Read_GPIOx, uint16_t Read_GPIO_Pin)

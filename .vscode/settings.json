@@ -3,6 +3,8 @@
         "*.gs": "javascript",
         "led_driver.h": "c",
         "globals.h": "c",
-        "fatfs.h": "c"
+        "fatfs.h": "c",
+        "sd.h": "c",
+        "string.h": "c"
     }
 }

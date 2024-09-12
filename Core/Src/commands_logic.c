@@ -1,7 +1,7 @@
 #include "globals.h"
 
-/*
-void Process_LocalSerialLine(void)
+
+void Process_LocalSerialLine(void);
 void Process_WIFIline(void);
 void Update_RTCDateTime(char *remote_command);
 void Update_ReportStatusPeriod(char *remote_command);
@@ -11,7 +11,9 @@ void Update_ChopConfig(char *remote_command);
 void Select_ChopProfile(char *remote_command);
 void Send_CommandAcknoledge(int id);
 void Check_RemoteCommand_Validity(void);
-*/
+
+
+static uint32_t remote_command_Millis = 0;
 
 void Process_LocalSerialLine(void)
 {
@@ -25,6 +27,7 @@ void Process_LocalSerialLine(void)
 
 void Process_WIFIline(void)
 {
+    
     int id;
     char *command_values;
 

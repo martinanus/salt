@@ -1,14 +1,17 @@
 #include "globals.h"
 
-/*
+
 void Handle_SaltMode_Transition(void);
-*/
+
+
+
 
 void Handle_SaltMode_Transition(void)
 {
+    static salt_mode_t prev_salt_mode;
+
     prev_salt_mode = salt_mode;
 
-    Read_ActivationSwitchState();
     Check_RemoteCommand_Validity();
 
     if (internal_error == STATUS_ERROR)

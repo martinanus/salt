@@ -1,10 +1,10 @@
 #include "globals.h"
 
-/*
+
 void Read_SystemStatus(void);
 void Read_Speed(void);
-void Process_RS485_1_line(void)
-void Check_Hasler_Validity(void)
+void Process_RS485_1_line(void);
+void Check_Hasler_Validity(void);
 void Process_RS485_2_line(void);
 void Check_PulseGenerator_Validity(void);
 void Check_GPSData_Validity(void);
@@ -13,17 +13,30 @@ void Read_SISStatus(void);
 void Read_ActivationSwitchState(void);
 void Read_MALSwitchState(void);
 void Read_MATSwitchState(void);
-*/
+
+
+
+static const char *speed_source_labels[] = SPEED_SOURCE_LABELS;
+static const dd_location_d origin_point = {DD_LAT_ORIGIN_POINT, DD_LON_ORIGIN_POINT};
+
+static float hasler_speed = -1;
+static float pulse_generator_speed = -1;
+static float gps_speed = -1;
+
 
 void Read_SystemStatus(void)
 {
     Check_GPSData_Validity();
     Read_Speed();
     Read_SISStatus();
+    Read_ActivationSwitchState();
 }
 
 void Read_Speed(void)
 {
+    static float          prev_speed;
+    static speed_source_t prev_speed_source;
+
     Check_Hasler_Validity();
     Check_PulseGenerator_Validity();
 
@@ -108,6 +121,9 @@ void Check_PulseGenerator_Validity(void)
 
 void Process_GPSline(void)
 {
+    status_t prev_gps_status;
+    zones_t prev_zone;
+    struct GPRMC gprms;
     double distance_from_origin;
     dd_location_d current_point;
 
@@ -171,6 +187,8 @@ void Check_GPSData_Validity(void)
 
 void Read_SISStatus(void)
 {
+    SIS_state_t prev_SIS_state[5];
+
     for (int i = 0; i < 5; i++)
     {
 
