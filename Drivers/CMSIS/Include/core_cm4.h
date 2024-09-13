@@ -2049,8 +2049,8 @@ __STATIC_INLINE uint32_t SysTick_Config(uint32_t ticks)
   @{
  */
 
-extern volatile int32_t ITM_RxBuffer;                              /*!< External variable to receive characters. */
-#define                 ITM_RXBUFFER_EMPTY  ((int32_t)0x5AA55AA5U) /*!< Value identifying \ref ITM_RxBuffer is ready for next character. */
+extern volatile int32_t ITM_lineer;                              /*!< External variable to receive characters. */
+#define                 ITM_lineER_EMPTY  ((int32_t)0x5AA55AA5U) /*!< Value identifying \ref ITM_lineer is ready for next character. */
 
 
 /**
@@ -2078,7 +2078,7 @@ __STATIC_INLINE uint32_t ITM_SendChar (uint32_t ch)
 
 /**
   \brief   ITM Receive Character
-  \details Inputs a character via the external variable \ref ITM_RxBuffer.
+  \details Inputs a character via the external variable \ref ITM_lineer.
   \return             Received character.
   \return         -1  No character pending.
  */
@@ -2086,10 +2086,10 @@ __STATIC_INLINE int32_t ITM_ReceiveChar (void)
 {
   int32_t ch = -1;                           /* no character available */
 
-  if (ITM_RxBuffer != ITM_RXBUFFER_EMPTY)
+  if (ITM_lineer != ITM_lineER_EMPTY)
   {
-    ch = ITM_RxBuffer;
-    ITM_RxBuffer = ITM_RXBUFFER_EMPTY;       /* ready for next character */
+    ch = ITM_lineer;
+    ITM_lineer = ITM_lineER_EMPTY;       /* ready for next character */
   }
 
   return (ch);
@@ -2098,14 +2098,14 @@ __STATIC_INLINE int32_t ITM_ReceiveChar (void)
 
 /**
   \brief   ITM Check Character
-  \details Checks whether a character is pending for reading in the variable \ref ITM_RxBuffer.
+  \details Checks whether a character is pending for reading in the variable \ref ITM_lineer.
   \return          0  No character available.
   \return          1  Character available.
  */
 __STATIC_INLINE int32_t ITM_CheckChar (void)
 {
 
-  if (ITM_RxBuffer == ITM_RXBUFFER_EMPTY)
+  if (ITM_lineer == ITM_lineER_EMPTY)
   {
     return (0);                              /* no character available */
   }

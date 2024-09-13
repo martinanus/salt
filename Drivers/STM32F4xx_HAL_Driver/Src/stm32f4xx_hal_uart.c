@@ -3212,7 +3212,7 @@ static HAL_StatusTypeDef UART_WaitOnFlagUntilTimeout(UART_HandleTypeDef *huart, 
   */
 HAL_StatusTypeDef UART_Start_Receive_IT(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size)
 {
-  huart->pRxBuffPtr = pData;
+  huart->plinePtr = pData;
   huart->RxXferSize = Size;
   huart->RxXferCount = Size;
 
@@ -3252,7 +3252,7 @@ HAL_StatusTypeDef UART_Start_Receive_DMA(UART_HandleTypeDef *huart, uint8_t *pDa
 {
   uint32_t *tmp;
 
-  huart->pRxBuffPtr = pData;
+  huart->plinePtr = pData;
   huart->RxXferSize = Size;
 
   huart->ErrorCode = HAL_UART_ERROR_NONE;
@@ -3585,13 +3585,13 @@ static HAL_StatusTypeDef UART_Receive_IT(UART_HandleTypeDef *huart)
     if ((huart->Init.WordLength == UART_WORDLENGTH_9B) && (huart->Init.Parity == UART_PARITY_NONE))
     {
       pdata8bits  = NULL;
-      pdata16bits = (uint16_t *) huart->pRxBuffPtr;
+      pdata16bits = (uint16_t *) huart->plinePtr;
       *pdata16bits = (uint16_t)(huart->Instance->DR & (uint16_t)0x01FF);
-      huart->pRxBuffPtr += 2U;
+      huart->plinePtr += 2U;
     }
     else
     {
-      pdata8bits = (uint8_t *) huart->pRxBuffPtr;
+      pdata8bits = (uint8_t *) huart->plinePtr;
       pdata16bits  = NULL;
 
       if ((huart->Init.WordLength == UART_WORDLENGTH_9B) || ((huart->Init.WordLength == UART_WORDLENGTH_8B) && (huart->Init.Parity == UART_PARITY_NONE)))
@@ -3602,7 +3602,7 @@ static HAL_StatusTypeDef UART_Receive_IT(UART_HandleTypeDef *huart)
       {
         *pdata8bits = (uint8_t)(huart->Instance->DR & (uint8_t)0x007F);
       }
-      huart->pRxBuffPtr += 1U;
+      huart->plinePtr += 1U;
     }
 
     if (--huart->RxXferCount == 0U)

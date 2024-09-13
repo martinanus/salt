@@ -113,7 +113,7 @@ typedef struct __SPI_HandleTypeDef
 
   __IO uint16_t              TxXferCount;    /*!< SPI Tx Transfer Counter                  */
 
-  uint8_t                    *pRxBuffPtr;    /*!< Pointer to SPI Rx transfer Buffer        */
+  uint8_t                    *plinePtr;    /*!< Pointer to SPI Rx transfer Buffer        */
 
   uint16_t                   RxXferSize;     /*!< SPI Rx Transfer size                     */
 

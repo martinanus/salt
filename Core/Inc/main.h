@@ -23,19 +23,20 @@
 #define __MAIN_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
+    /* Private includes ----------------------------------------------------------*/
+    /* USER CODE BEGIN Includes */
 
-/* USER CODE END Includes */
+    /* USER CODE END Includes */
 
-/* Exported types ------------------------------------------------------------*/
-/* USER CODE BEGIN ET */
+    /* Exported types ------------------------------------------------------------*/
+    /* USER CODE BEGIN ET */
     typedef enum
     {
         MODO_NORMAL = 0,
@@ -61,6 +62,16 @@ extern "C" {
         ZONE_2 = 2,
         ZONE_3 = 3
     } zones_t;
+
+    typedef enum
+    {
+        NO_COMM = 0,
+        GPS_COMM = 1,
+        WIFI_COMM = 2,
+        RS485_1_COMM = 3,
+        RS485_2_COMM = 4,
+        LOCAL_SERIAL_COMM = 5
+    } comm_t;
 
     typedef enum
     {
@@ -171,20 +182,20 @@ extern "C" {
         CHOP_BRAKING = 4
 
     } chop_state_t;
-/* USER CODE END ET */
+    /* USER CODE END ET */
 
-/* Exported constants --------------------------------------------------------*/
-/* USER CODE BEGIN EC */
+    /* Exported constants --------------------------------------------------------*/
+    /* USER CODE BEGIN EC */
 
-/* USER CODE END EC */
+    /* USER CODE END EC */
 
-/* Exported macro ------------------------------------------------------------*/
-/* USER CODE BEGIN EM */
+    /* Exported macro ------------------------------------------------------------*/
+    /* USER CODE BEGIN EM */
 
-/* USER CODE END EM */
+    /* USER CODE END EM */
 
-/* Exported functions prototypes ---------------------------------------------*/
-void Error_Handler(void);
+    /* Exported functions prototypes ---------------------------------------------*/
+    void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 
@@ -349,7 +360,7 @@ void Error_Handler(void);
 #define LD2_Pin GPIO_PIN_7
 #define LD2_GPIO_Port GPIOB
 
-/* USER CODE BEGIN Private defines */
+    /* USER CODE BEGIN Private defines */
 
 #define LOCAL_SERIAL_UART_HANDLE huart3
 #define WIFI_UART_HANDLE huart4
@@ -375,36 +386,35 @@ void Error_Handler(void);
 #define MAX_BUFFER_LENGTH 256
 #define BTN_DEBOUNCE_MS 100
 
-#define SPEED_STOP 0.5            // km/h
-#define SPEED_READ_VALIDITY_S 3   // s
-#define MODO_LIMITADO_STARTING_BREAK_S 5 //s TODO 30secs!
-#define ZONE_READ_VALIDITY_S 60   // s
-#define KNOT_TO_KM_H_FACTOR 1.852 // multiplier factor
-#define BUZZER_SOUND_PERIOD_S 1   // s
-#define SYSTEM_TASK_PERIOD_MS 500 // ms
-
+#define SPEED_STOP 0.5                   // km/h
+#define SPEED_READ_VALIDITY_S 3          // s
+#define MODO_LIMITADO_STARTING_BREAK_S 5 // s TODO 30secs!
+#define ZONE_READ_VALIDITY_S 60          // s
+#define KNOT_TO_KM_H_FACTOR 1.852        // multiplier factor
+#define BUZZER_SOUND_PERIOD_S 1          // s
+#define SYSTEM_TASK_PERIOD_MS 500        // ms
 
 #define DD_LAT_ORIGIN_POINT -34.587174 // Latitude for Retiro train station
 #define DD_LON_ORIGIN_POINT -58.383134 // Longitude Retiro train station
 #define DISTANCE_LIMIT_ZONE_1 10       // Distance in straight line from origin point
 #define DISTANCE_LIMIT_ZONE_2 40       // Distance in straight line from origin point
 
-#define COMMAND_VALIDITY_INITIAL 10           // s
-#define REPORT_STATUS_PERIOD_S 5              // s
+#define COMMAND_VALIDITY_INITIAL 10                   // s
+#define REPORT_STATUS_PERIOD_S 5                      // s
 #define NO_ZONE_SPEED_CONFIG_INITIAL {29, 24, 35, 15} // speed_limit_to_decelerate, speed_limit_to_accelerate, speed_limit_to_brake, time_to_brake_s}
-#define ZONE_1_SPEED_CONFIG_INITIAL {30, 25, 36, 10} 
-#define ZONE_2_SPEED_CONFIG_INITIAL {35, 27, 40, 8} 
-#define ZONE_3_SPEED_CONFIG_INITIAL {40, 30, 50, 6} 
+#define ZONE_1_SPEED_CONFIG_INITIAL {30, 25, 36, 10}
+#define ZONE_2_SPEED_CONFIG_INITIAL {35, 27, 40, 8}
+#define ZONE_3_SPEED_CONFIG_INITIAL {40, 30, 50, 6}
 
-#define CHOP_PROFILE_1_INITIAL {3, 7, 3, 10}  //  time_to_accelerate, time_to_decelerate, number_of_cycles_before_break, time_to_brake
+#define CHOP_PROFILE_1_INITIAL {3, 7, 3, 10} //  time_to_accelerate, time_to_decelerate, number_of_cycles_before_break, time_to_brake
 #define CHOP_PROFILE_2_INITIAL {6, 14, 4, 20}
 #define CHOP_PROFILE_3_INITIAL {9, 21, 5, 30}
 #define CHOP_PROFILE_4_INITIAL {12, 28, 6, 40}
 #define CHOP_PROFILE_5_INITIAL {15, 35, 7, 50}
 
 #define SPEED_SOURCE_LABELS {"SPEED_NONE", "HASLER", "PULSE_GENERATOR", "GPS"}
-#define SALT_MODE_LABELS { "MODO_NORMAL", "MODO_LIMITADO", "MODO_TOTAL", "MODO_PARADA", "MODO_COCHE_DERIVA", "MODO_INTERMITENTE"}
-#define CRITICAL_SIGNAL_STATE_LABELS {"SIGNAL_UNINTERFERED", "SIGNAL_BYPASSED","SIGNAL_OPEN"}
+#define SALT_MODE_LABELS {"MODO_NORMAL", "MODO_LIMITADO", "MODO_TOTAL", "MODO_PARADA", "MODO_COCHE_DERIVA", "MODO_INTERMITENTE"}
+#define CRITICAL_SIGNAL_STATE_LABELS {"SIGNAL_UNINTERFERED", "SIGNAL_BYPASSED", "SIGNAL_OPEN"}
 
 #define REG_MODO_LIMITADO_C_Pin REG_1_C_Pin
 #define REG_MODO_LIMITADO_C_GPIO_Port REG_1_C_GPIO_Port
@@ -424,7 +434,7 @@ void Error_Handler(void);
 #define REG_CT_M_Pin REG_4_M_Pin
 #define REG_CT_M_GPIO_Port REG_4_M_GPIO_Port
 
-/* USER CODE END Private defines */
+    /* USER CODE END Private defines */
 
 #ifdef __cplusplus
 }

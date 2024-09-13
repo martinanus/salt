@@ -7,6 +7,8 @@
 #include "sd.h"
 #include "led_driver.h"
 
+extern osSemaphoreId commsSemHandle;
+
 extern I2C_HandleTypeDef hi2c1;
 extern RTC_HandleTypeDef hrtc;
 extern SPI_HandleTypeDef hspi4;
@@ -25,14 +27,16 @@ extern uint8_t command_validity_s;
 extern uint8_t speed_configs[4][4];
 extern uint8_t chop_profile_config[5][4];
 
-extern char WIFIrxBuff[MAX_BUFFER_LENGTH];
-extern char GPSrxBuff[MAX_COMMAND_LENGTH];
+extern comm_t commToProcess;
+extern char WIFIline[MAX_BUFFER_LENGTH];
+extern char GPSline[MAX_COMMAND_LENGTH];
+extern char rs485_1_line[MAX_BUFFER_LENGTH];
+extern char rs485_2_line[MAX_BUFFER_LENGTH];
+extern char localSerial_line[MAX_BUFFER_LENGTH];
 extern uint32_t gps_dataMillis;
-extern char rs485_1_rxBuff[MAX_BUFFER_LENGTH];
 extern uint32_t rs485_1_dataMillis;
-extern char rs485_2_rxBuff[MAX_BUFFER_LENGTH];
 extern uint32_t rs485_2_dataMillis;
-extern char localSerial_rxBuff[MAX_BUFFER_LENGTH];
+
 extern const char *local_log_file_name ;
 extern volatile uint16_t adc_results_dma[10];
 extern float speed;

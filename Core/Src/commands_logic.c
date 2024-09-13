@@ -17,7 +17,7 @@ static uint32_t remote_command_Millis = 0;
 
 void Process_LocalSerialLine(void)
 {
-    if (strcmp(localSerial_rxBuff, "DOWNLOAD_LOGS") == 0)
+    if (strcmp(localSerial_line, "DOWNLOAD_LOGS") == 0)
     {
         Log_Event("LOCAL_LOG_DOWNLOAD_START");
         read_file_line_by_line(local_log_file_name, &LOCAL_SERIAL_UART_HANDLE);
@@ -31,8 +31,8 @@ void Process_WIFIline(void)
     int id;
     char *command_values;
 
-    sscanf(WIFIrxBuff, "%d|%[^:]", &id, remote_command);
-    command_values = strchr(WIFIrxBuff, ':');
+    sscanf(WIFIline, "%d|%[^:]", &id, remote_command);
+    command_values = strchr(WIFIline, ':');
 
     if (id)
     {

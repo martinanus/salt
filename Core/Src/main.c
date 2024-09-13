@@ -67,6 +67,8 @@ osThreadId modeTransTaskHandle;
 osThreadId systemTaskHandle;
 osThreadId criticalSigTaskHandle;
 osThreadId reportTaskHandle;
+osThreadId commsTaskHandle;
+osSemaphoreId commsSemHandle;
 /* USER CODE BEGIN PV */
 const char *salt_mode_labels[] = SALT_MODE_LABELS;
 const char *local_log_file_name = "registro.txt";
@@ -92,11 +94,15 @@ uint8_t chop_profile_config[5][4] = {
 FATFS fs;
 char remote_command[MAX_COMMAND_LENGTH];
 command_states_t remote_command_active;
-char WIFIrxBuff[MAX_BUFFER_LENGTH];
-char GPSrxBuff[MAX_COMMAND_LENGTH];
-char rs485_1_rxBuff[MAX_BUFFER_LENGTH];
-char rs485_2_rxBuff[MAX_BUFFER_LENGTH];
-char localSerial_rxBuff[MAX_BUFFER_LENGTH];
+
+comm_t commToProcess = NO_COMM;
+
+char WIFIline[MAX_BUFFER_LENGTH];
+char GPSline[MAX_COMMAND_LENGTH];
+char rs485_1_line[MAX_BUFFER_LENGTH];
+char rs485_2_line[MAX_BUFFER_LENGTH];
+char localSerial_line[MAX_BUFFER_LENGTH];
+
 char local_log_buffer[MAX_LOG_LENGTH];
 uint32_t gps_dataMillis = 0;
 uint32_t rs485_1_dataMillis = 0;
@@ -143,6 +149,7 @@ void StartModeTransTask(void const *argument);
 void StartSystemTask(void const *argument);
 void StartCriticalSigTask(void const *argument);
 void StartReportTask(void const *argument);
+void StartCommsTask(void const *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -160,6 +167,7 @@ int _write(int file, char *ptr, int len)
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
+
   if (hadc->Instance == ADC3)
   {
     ADC_ConvCplt = 1;
@@ -264,8 +272,12 @@ int main(void)
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
+  /* Create the semaphores(s) */
+  /* definition and creation of commsSem */
+  osSemaphoreDef(commsSem);
+  commsSemHandle = osSemaphoreCreate(osSemaphore(commsSem), 1);
+
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -278,7 +290,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of modeTransTask */
-  osThreadDef(modeTransTask, StartModeTransTask, osPriorityNormal, 0, 1024);
+  osThreadDef(modeTransTask, StartModeTransTask, osPriorityNormal, 0, 512);
   modeTransTaskHandle = osThreadCreate(osThread(modeTransTask), NULL);
 
   /* definition and creation of systemTask */
@@ -290,8 +302,12 @@ int main(void)
   criticalSigTaskHandle = osThreadCreate(osThread(criticalSigTask), NULL);
 
   /* definition and creation of reportTask */
-  osThreadDef(reportTask, StartReportTask, osPriorityLow, 0, 512);
+  osThreadDef(reportTask, StartReportTask, osPriorityLow, 0, 256);
   reportTaskHandle = osThreadCreate(osThread(reportTask), NULL);
+
+  /* definition and creation of commsTask */
+  osThreadDef(commsTask, StartCommsTask, osPriorityHigh, 0, 1024);
+  commsTaskHandle = osThreadCreate(osThread(commsTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -1099,11 +1115,56 @@ void StartReportTask(void const *argument)
   for (;;)
   {
     Report_SystemStatus();
-    
+
     osDelay(report_status_period_s * 1000 + (rand() % 50));
     osThreadYield();
   }
   /* USER CODE END StartReportTask */
+}
+
+/* USER CODE BEGIN Header_StartCommsTask */
+/**
+ * @brief Function implementing the commsTask thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_StartCommsTask */
+void StartCommsTask(void const *argument)
+{
+  /* USER CODE BEGIN StartCommsTask */
+  /* Infinite loop */
+  for (;;)
+  {
+    if (xSemaphoreTake(commsSemHandle, portMAX_DELAY) == pdTRUE)
+    {
+      switch (commToProcess)
+      {
+      case GPS_COMM:
+        Process_GPSline();
+        break;
+
+      case WIFI_COMM:
+        Process_WIFIline();
+        break;
+
+      case RS485_1_COMM:
+        Process_RS485_1_line();
+        break;
+
+      case RS485_2_COMM:
+        Process_RS485_2_line();
+        break;
+
+      case LOCAL_SERIAL_COMM:
+        Process_LocalSerialLine();
+        break;
+
+      default:
+        break;
+      }
+    }
+  }
+  /* USER CODE END StartCommsTask */
 }
 
 /**

@@ -81,7 +81,7 @@ void Read_Speed(void)
 }
 void Process_RS485_1_line(void)
 {
-    hasler_speed = rs485_1_rxBuff[HASLER_SPEED_BYTE];
+    hasler_speed = rs485_1_line[HASLER_SPEED_BYTE];
 }
 
 void Check_Hasler_Validity(void)
@@ -100,9 +100,9 @@ void Process_RS485_2_line(void)
 {
     char *pEnd;
 
-    pulse_generator_speed = strtof(rs485_2_rxBuff, &pEnd);
+    pulse_generator_speed = strtof(rs485_2_line, &pEnd);
 
-    if (pEnd == rs485_2_rxBuff)
+    if (pEnd == rs485_2_line)
     {
         pulse_generator_speed = -1;
     }
@@ -130,7 +130,7 @@ void Process_GPSline(void)
     prev_gps_status = gps_status;
     prev_zone = current_zone;
 
-    parse_GPRMC((char *)GPSrxBuff, &gprms);
+    parse_GPRMC((char *)GPSline, &gprms);
     if (gprms.status == 'A')
     {
         gps_status = STATUS_OK;
