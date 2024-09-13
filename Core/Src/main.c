@@ -167,33 +167,32 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
   }
 }
 
-
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
 {
-    static uint32_t previousMillis = 0;
-    uint32_t currentMillis;
+  static uint32_t previousMillis = 0;
+  uint32_t currentMillis;
 
-    if (GPIO_PIN == CHOP_SEL_Pin)
+  if (GPIO_PIN == CHOP_SEL_Pin)
+  {
+    if (salt_mode == MODO_LIMITADO)
     {
-        if (salt_mode == MODO_LIMITADO)
+      currentMillis = HAL_GetTick();
+      if (currentMillis - previousMillis > BTN_DEBOUNCE_MS)
+      {
+        if (chop_profile == CHOP_PROFILE_4)
         {
-            currentMillis = HAL_GetTick();
-            if (currentMillis - previousMillis > BTN_DEBOUNCE_MS)
-            {
-                if (chop_profile == CHOP_PROFILE_4)
-                {
-                    chop_profile = CHOP_PROFILE_0;
-                }
-                else
-                {
-                    chop_profile++;
-                }
-                sprintf(local_log_buffer, "CHOP_PROFILE_%d", chop_profile + 1);
-                Log_Event(local_log_buffer);
-                previousMillis = currentMillis;
-            }
+          chop_profile = CHOP_PROFILE_0;
         }
+        else
+        {
+          chop_profile++;
+        }
+        sprintf(local_log_buffer, "CHOP_PROFILE_%d", chop_profile + 1);
+        Log_Event(local_log_buffer);
+        previousMillis = currentMillis;
+      }
     }
+  }
 }
 
 /* USER CODE END 0 */
@@ -287,11 +286,11 @@ int main(void)
   systemTaskHandle = osThreadCreate(osThread(systemTask), NULL);
 
   /* definition and creation of criticalSigTask */
-  osThreadDef(criticalSigTask, StartCriticalSigTask, osPriorityNormal, 0, 256);
+  osThreadDef(criticalSigTask, StartCriticalSigTask, osPriorityNormal, 0, 512);
   criticalSigTaskHandle = osThreadCreate(osThread(criticalSigTask), NULL);
 
   /* definition and creation of reportTask */
-  osThreadDef(reportTask, StartReportTask, osPriorityLow, 0, 256);
+  osThreadDef(reportTask, StartReportTask, osPriorityLow, 0, 512);
   reportTaskHandle = osThreadCreate(osThread(reportTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -1035,7 +1034,8 @@ void StartModeTransTask(void const *argument)
 
     Handle_SaltMode_Transition();
 
-    osDelay(200);
+    osDelay(SYSTEM_TASK_PERIOD_MS + (rand() % 50));
+    osThreadYield();
   }
   /* USER CODE END 5 */
 }
@@ -1056,7 +1056,8 @@ void StartSystemTask(void const *argument)
     Read_SystemStatus();
     Display_SystemStatus();
 
-    osDelay(200);
+    osDelay(SYSTEM_TASK_PERIOD_MS + (rand() % 50));
+    osThreadYield();
   }
   /* USER CODE END StartSystemTask */
 }
@@ -1078,7 +1079,8 @@ void StartCriticalSigTask(void const *argument)
     Set_CriticalSignals_State();
     Control_CriticalSignals();
 
-    osDelay(200);
+    osDelay(SYSTEM_TASK_PERIOD_MS + (rand() % 50));
+    osThreadYield();
   }
   /* USER CODE END StartCriticalSigTask */
 }
@@ -1097,7 +1099,9 @@ void StartReportTask(void const *argument)
   for (;;)
   {
     Report_SystemStatus();
-    osDelay(report_status_period_s * 1000);
+    
+    osDelay(report_status_period_s * 1000 + (rand() % 50));
+    osThreadYield();
   }
   /* USER CODE END StartReportTask */
 }

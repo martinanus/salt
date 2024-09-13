@@ -12,7 +12,7 @@ void WriteCheck_RelayState(GPIO_TypeDef *WritecGPIOx, uint16_t Write_GPIO_Pin, G
 {
     GPIO_PinState readPinState;
     HAL_GPIO_WritePin(WritecGPIOx, Write_GPIO_Pin, WritePinState);
-    HAL_Delay(100);
+    HAL_Delay(50);
     readPinState = HAL_GPIO_ReadPin(Read_GPIOx, Read_GPIO_Pin);
 
     // Read pin are connected with inverted values
