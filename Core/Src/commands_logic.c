@@ -161,7 +161,6 @@ void Update_SpeedConfig(char *remote_command)
 
     if (sscanf(remote_command, "%d,%d,%d,%d,%d", &zone, &speeds[0], &speeds[1], &speeds[2], &speeds[3]) == 5)
     {
-        memcpy(speed_configs, speeds, sizeof(speed_configs));
         speed_configs[zone][0] = speeds[0];
         speed_configs[zone][1] = speeds[1];
         speed_configs[zone][2] = speeds[2];
