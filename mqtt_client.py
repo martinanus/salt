@@ -29,9 +29,9 @@ def on_connect(client, userdata, flags, reason_code, properties):
 def on_message(client, userdata, msg):
     try:
         message = msg.payload.decode("utf-8")
+        print(f"RX in {msg.topic}: {message}")
     except:
         pass
-    print(f"RX in {msg.topic}: {message}")
 
 def publish_messages():
     while True:
