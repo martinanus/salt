@@ -13,6 +13,8 @@ void setDigit5_regValue(void);
 void setDigit6_regValue(void);
 void setDigit7_regValue(void);
 void Control_Buzzer(void);
+void TurnOn_Buzzer(void);
+void TurnOff_Buzzer(void);
 void Send_SystemStatus(void);
 void Activate_ZoneRelay(void);
 
@@ -477,29 +479,55 @@ void Send_SystemStatus(void)
 void Control_Buzzer(void)
 {
     static uint32_t buzzer_toggle_ms = 0;
-    uint32_t currentMillis;
+    static uint8_t  buzzer_intermitent_state = 0;
+    uint32_t currentMillis;    
 
     if (buzzer_state == BUZZER_OFF)
-    {
-        HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, 0);
-        HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 0);
+    {        
+        HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+        TurnOff_Buzzer();                
     }
     else if (buzzer_state == BUZZER_ON_CONTINUOS)
-    {
-        HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, 1);
-        HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 1);
+    {        
+        HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+        TurnOn_Buzzer();                
     }
     else if (buzzer_state == BUZZER_ON_INTERMITENT)
     {
         currentMillis = HAL_GetTick();
         if (currentMillis - buzzer_toggle_ms > BUZZER_SOUND_PERIOD_S * 1000)
         {
-            HAL_GPIO_TogglePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin);
-            HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-
+            if (buzzer_intermitent_state){
+                HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+                TurnOff_Buzzer();  
+                buzzer_intermitent_state = 0;
+            } else {
+                HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+                TurnOn_Buzzer();   
+                buzzer_intermitent_state = 1;
+            }                        
             buzzer_toggle_ms = currentMillis;
         }
     }
+}
+
+void TurnOn_Buzzer(void){
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Pin = BUZZER_C_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(BUZZER_C_GPIO_Port, &GPIO_InitStruct);
+}
+
+void TurnOff_Buzzer(void){
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    
+    HAL_GPIO_WritePin(BUZZER_C_GPIO_Port, BUZZER_C_Pin, GPIO_PIN_RESET);        
+    GPIO_InitStruct.Pin = BUZZER_C_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(BUZZER_C_GPIO_Port, &GPIO_InitStruct);    
 }
 
 
