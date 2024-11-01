@@ -1,0 +1,19 @@
+\subsection{Pruebas de hardware}
+
+Los PCB del SAL/T fueron diseñados para poder ser armados de manera progresiva conectando de a uno los circuitos que interactúan con el MCU. Para eso, se colocó el \textit{footprint} para una resistencia de 0 $\Omega$ o un puente en la alimentación de cada circuito individual. También se colocaron puntos de prueba en casi todas las señales. Esto permitió armar el sistema de manera incremental y asegurándose que cada circuito esté en funcionamiento (a nivel hardware) antes de conectar el siguiente.  \\ 
+
+La primera prueba que se realizó fue conectar la alimentación de uno de los controladores ULN2003 y ejecutar un rutina de activación y desactivación de cada uno de los pines de control utilizados para los relés. Al mismo tiempo, se leía el estado de la salida secundaria del relé para verificar que se produjera el cambio de estado esperado. También se colocó un LED indicativo al lado de cada relé para poder visualizar dentro de la placa el estado de cada uno en estas pruebas. Esta prueba exitosa se repitió para todos los 21 relés del sistema validando que sus circuitos de control, de activación y de salida estuvieran bien conectados y funcionando según lo esperado. \\ 
+
+En segundo lugar, se probaron los circuitos de medición de los SIS. Se alimentó el chip ICL7660AIBAZA y se midió en el punto de prueba de su tensión de salida la tensión esperada de -5V necesaria para alimentar los amplificadores de instrumentación INA823DGKR. Para probar los circuitos de medición, se utilizaron los buses de las señales CT y FE simulados con llaves. Con una rutina de del ADC que leía continuamente los valores en las entradas y la función de \textit{debbuging} que permite hacer una ejecución controlada y visualizar los valores de los registros y utilizando los puntos de prueba sobre la placa, se verificó que los circuitos estén convirtiendo la tensión diferencial entre los terminales de la llave en la tensión \textit{single-ended} esperada. Se probó alimentar los buses con 5V y con 3V3 para verificar que se obtuvieran distintos valores esperados a la salida del circuito y a nivel digital luego del ADC. No se pudo probar los circuitos con alimentación de 72 VDC o 110 VDC pero se validó la línealidad del circuito que permitiría funcionar correctamente para las tensiones diseñadas. \\ 
+
+
+Luego se probaron los circuitos de control simples con el reset del módulo GPS o la activación del buzzer sonoro en la placa secundaria. En ambos casos, se verificó que el circuito funcionara según lo esperado pudiendo prender y apagar el módulo GPS o el buzzer sonoro con el valor del pin digital al que se conecta el MCU. También se probó la lectura de los circuitos de las llaves de activación de modo aislado limitado, modo aislado total y el botón seleccionador de perfil intermitente obteniendo la tensión esperada en los puntos de prueba y el valor digital en el MCU. \\ 
+
+En cuanto a las interfaces de comunicación entre los distintos módulos o chips del sistema, se hicieron las mediciones de los puntos de prueba básicos con un voltímetro para verificar que las tensiones de reposo de las líneas de comunicación fueran las esperadas. Para los circuitos conversor UART a RS485, se midieron los valores de tensión esperados para las señales A o B utilizando los pines del MCU como salidas GPIO digitales para poder fijar su valor antes de configurarlo para trasmisiones UART. Para los LEDs y display de la placa secundaria, se configuró una rutina que encendía y apagaba progresivamente todos los LEDs disponibles y se verificó visualmente que la conexión sea correcta para cada uno.  
+
+
+
+
+
+
+

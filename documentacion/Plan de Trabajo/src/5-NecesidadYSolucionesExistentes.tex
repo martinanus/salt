@@ -1,0 +1,17 @@
+\section{Necesidad y soluciones existentes}
+
+La empresa de Trenes Argentinos mencionó en reiteradas oportunidades la disconformidad con la situación actual de las formaciones ferroviarias frente a algún fallo en los Sistemas Instrumentados de Seguridad (SIS) ya que, al entrar alguno de ellos en fallo, obliga a la formación a ser remolcada o, lo que sucede más frecuentemente en la práctica, a continuar hasta la próxima estación para descender a los pasajeros deshabilitando todos los SIS con los que cuenta la formación. Esto presenta una situación de riesgo ya que la formación pasa a depender fuertemente de la manualidad del conductor sin ningún sistema de seguridad monitoreando y asistiendo la conducción. \\
+
+Al mismo tiempo, la empresa no encuentra alternativas comerciales para satisfacer las necesidades de un Sistema de Aislamiento Limitado / Total ya que necesita integrar distintos SIS y fuentes de medición que no son necesariamente del mismo fabricante o con especificaciones genéricas que permitan su fácil integración.  \\
+
+Por estos motivos, Trenes Argentinos solicitó al grupo CONICET-GICSAFe que diseñara un SAL/T a medida para cumplir con los requerimientos específicos de sus formaciones. En 2019 se entregó una primera versión del prototipo que permitía satisfacer las funciones más importantes del sistema. Sin embargo, antes de requerir una versión productiva y fabricable en cantidades, se determinó que faltaban implementar algunas funcionalidades adicionales para que se pueda instalar un SAL/T en las formaciones. El pliego de especificaciones técnicas para la versión completa del SAL/T se encuentra en disponible en \cite{spec}. \\
+
+Los cambios más relevantes mencionados en el documento que dan lugar a rediseñar el prototipo antes de producirlo en masa son: 
+\begin{itemize}
+    \item Utilización de un microcontrolador de mayor capacidad y más vigente
+    \item Generación de un firmware más portable basado en un sistema operativo de tiempo real
+    \item Aislamiento del SIS en falla particular en Modo Aislado Limitado sin interrumpir el funcionamiento del resto de los SIS
+    \item Selección de distintos perfiles intermitentes desde el panel frontal del SAL/T
+    \item Conector de zona para poder determinas distintas zonas de tránsito para la formación y activar cambios en otros sistemas de la formación
+    \item Registro interno de eventos para cambios de estado de SIS, activación de modos, excesos de velocidad y activación de señales de Corte de Tracción y Freno de Emergencia
+\end{itemize}

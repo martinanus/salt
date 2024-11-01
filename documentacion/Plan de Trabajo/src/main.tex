@@ -1,0 +1,133 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{graphicx}
+\graphicspath{{Figuras/}}
+
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage[left=2.5cm,right=2.5cm,bottom=2cm,top=2.5cm]{geometry}
+\usepackage{titling}
+\usepackage{bm}
+\usepackage{multirow}
+\usepackage{floatrow}
+\newfloatcommand{capbtabbox}{table}[][\FBwidth]
+\usepackage[table,xcdraw]{xcolor}
+
+\usepackage{blindtext}
+\usepackage{verbatim}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{textcomp}
+\usepackage{bbm}
+\usepackage{multicol}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{placeins}
+\usepackage[hidelinks]{hyperref}
+
+\usepackage[separate-uncertainty = true]{siunitx}
+\sisetup{output-decimal-marker = {,}, per-mode=fraction, exponent-product = \cdot}
+
+% Renombre para titulo de referencias / bibliografía
+\renewcommand\refname{}
+
+% Bullets para las listas
+\renewcommand{\labelitemi}{$\bullet$}
+\makeatletter
+\def\namedlabel#1#2{\begingroup
+    #2%
+    \def\@currentlabel{#2}%
+    \phantomsection\label{#1}\endgroup}
+\makeatother
+
+% Numeración anidada con números
+\renewcommand{\labelenumii}{\arabic{enumi}.\arabic{enumii}}
+\renewcommand{\labelenumiii}{\arabic{enumi}.\arabic{enumii}.\arabic{enumiii}}
+\renewcommand{\labelenumiv}{\arabic{enumi}.\arabic{enumii}.\arabic{enumiii}.\arabic{enumiv}}
+
+\newcommand{\paralelo}{\mathbin{\!/\mkern-5mu/\!}}
+\sisetup{exponent-product=\cdot, output-decimal-marker={,}, per-mode=symbol}
+
+\usepackage{fancyhdr}
+\usepackage[T1]{fontenc}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\textit{Sistema de Aislado Limitado / Total (SAL/T)}}
+\rhead{\textit{UBA - Facultad de Ingeniería}}
+\cfoot{\thepage}
+
+\setlength{\headheight}{13.6pt}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\pagenumbering{gobble}
+\DeclareSIUnit{\div}{div}
+\DeclareSIUnit{\Sa}{Sa}
+
+\begin{titlepage}	
+	\centering
+
+	%\vspace*{0.3cm}	
+
+     \Large{\textsc{Universidad de Buenos Aires}}\\ 
+	\Large{\textsc{Facultad de Ingeniería}}\\ 
+	\vspace*{1.4cm}	
+
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=3.5cm]{img/logo_fiuba.pdf} 	
+	\end{figure}
+	\vspace*{1cm}
+
+\Huge{\textsc{86.00 Tesis de Ingeniería Electrónica - Plan de trabajo \\}}\vspace{.5cm}
+	
+	\newcommand{\LargoDeBarra}{1}  % Ajustar
+	
+	\rule{\LargoDeBarra\linewidth}{0.3 mm} \\[0.1 cm]
+	\huge{\textbf{Rediseño e implementación de un Sistema de Aislado Limitado / Total (SAL/T) para trenes}} \\[-0.3 cm]
+	\rule{\LargoDeBarra\linewidth}{0.3 mm}
+	\vspace*{0.5cm}
+	
+	\begin{table}[htb]
+    \begin{tabular}{llcrr} \toprule
+        Rol & Integrante              & Padrón    & Correo electrónico  & Teléfono  \\\midrule
+        Alumno & Anus, Martín     &    101033  & manus@fi.uba.ar & +54 11 6711-8857 \\\midrule
+        Director & Lutenberg, Ariel     &    -  & alutenb@fi.uba.ar  & +54 11 5844-3749 \\\midrule
+        Co-director & Gomez, Pablo     &    -  & pgomez@fi.uba.ar & +54 11 6905-2435  \\\midrule
+        Co-director & Laiuppa, Adrián     &    -  & alaiuppa@gmail.com & +54 291 643-4357 
+        \\\bottomrule
+    \end{tabular}
+    \end{table}
+	\vspace{1cm}
+	
+	\textsc{\large{Fecha de presentación: 20/04/2024\\}} \medskip
+ \textsc{\large{Modalidad de trabajo: Tesis\\}} 
+
+\end{titlepage}
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+% -------------------------------------------------------------------------------
+
+\setcounter{page}{1}
+\pagenumbering{arabic}
+
+\input{1-Descripcion}
+\input{2-Antecedentes}
+\input{3-AreasProfesionalesDeRelevancia}
+\input{4-Objetivos}
+\input{5-NecesidadYSolucionesExistentes}
+\input{6-Alcance}
+\input{7-Entregables}
+\input{8-DesgloseDeTareas}
+\include{9-Referencias}
+\include{10-Anexo}
+
+\end{document}

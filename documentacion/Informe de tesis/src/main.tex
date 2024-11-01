@@ -1,0 +1,220 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{graphicx}
+\graphicspath{{Figuras/}}
+
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage[left=2.5cm,right=2.5cm,bottom=2cm,top=2.5cm]{geometry}
+\usepackage{titling}
+\usepackage{bm}
+\usepackage{multirow}
+\usepackage{floatrow}
+\newfloatcommand{capbtabbox}{table}[][\FBwidth]
+\usepackage[table,xcdraw]{xcolor}
+
+\usepackage{blindtext}
+\usepackage{verbatim}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{textcomp}
+\usepackage{bbm}
+\usepackage{multicol}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{placeins}
+\usepackage[hidelinks]{hyperref}
+
+\usepackage[separate-uncertainty = true]{siunitx}
+\sisetup{output-decimal-marker = {,}, per-mode=fraction, exponent-product = \cdot}
+
+% Renombre para titulo de referencias / bibliografía
+\renewcommand\refname{}
+
+% Bullets para las listas
+\renewcommand{\labelitemi}{$\bullet$}
+\makeatletter
+\def\namedlabel#1#2{\begingroup
+    #2%
+    \def\@currentlabel{#2}%
+    \phantomsection\label{#1}\endgroup}
+\makeatother
+
+% Numeración anidada con números
+\renewcommand{\labelenumii}{\arabic{enumi}.\arabic{enumii}}
+\renewcommand{\labelenumiii}{\arabic{enumi}.\arabic{enumii}.\arabic{enumiii}}
+\renewcommand{\labelenumiv}{\arabic{enumi}.\arabic{enumii}.\arabic{enumiii}.\arabic{enumiv}}
+
+\newcommand{\paralelo}{\mathbin{\!/\mkern-5mu/\!}}
+\sisetup{exponent-product=\cdot, output-decimal-marker={,}, per-mode=symbol}
+
+\usepackage{fancyhdr}
+\usepackage[T1]{fontenc}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\textit{Sistema de Aislado Limitado / Total (SAL/T)}}
+\rhead{\textit{UBA - Facultad de Ingeniería}}
+\cfoot{\thepage}
+
+\setlength{\headheight}{13.6pt}
+
+% Figuras con numeración por sección, subsección o continuo
+%\counterwithout{figure}{section}
+\counterwithin{figure}{section}
+%&\counterwithin{figure}{subsection}
+
+\usepackage{changepage}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+\pagenumbering{gobble}
+\DeclareSIUnit{\div}{div}
+\DeclareSIUnit{\Sa}{Sa}
+
+\begin{titlepage}	
+	\centering
+
+	%\vspace*{0.3cm}	
+
+%     \Large{\textsc{Universidad de Buenos Aires}}\\ 
+%	\Large{\textsc{Facultad de Ingeniería}}\\ 
+%	\vspace*{1cm}	
+
+	\begin{figure}[h]
+		\centering
+		\includegraphics[scale=1]{img/logo_fiuba_new.pdf} 	
+	\end{figure}
+	\vspace*{2cm}
+
+\huge{\textsc{86.00 Tesis de Ingeniería Electrónica - Informe de tesis\\}}\vspace{.3cm}
+	
+	\newcommand{\LargoDeBarra}{1}  % Ajustar
+	
+	\rule{\LargoDeBarra\linewidth}{0.3 mm} \\[0.1 cm]
+	\LARGE{\textbf{Rediseño e implementación de un Sistema de Aislado Limitado / Total (SAL/T) para trenes}} \\[-0.3 cm]
+	\rule{\LargoDeBarra\linewidth}{0.3 mm}
+
+\vspace*{2cm}
+
+    \begin{table}[htb]
+%    \raggedright
+
+    \begin{tabular}{lcc} 
+        \textbf{Autor}              &     &     \\
+        Anus, Martín     &    manus@fi.uba.ar & padron n° 101033   \\
+        & & \\
+         \textbf{Directores de tesis} &         &   \\
+         Lutenberg, Ariel       & alutenb@fi.uba.ar & Director  \\
+         Gomez, Pablo       & pgomez@fi.uba.ar   & Co-director \\
+        Laiuppa, Adrián      & alaiuppa@gmail.com & Co-director     \\
+        & &  \\
+         \textbf{Jurados}        & \\
+         Cruz, Juan Manuel       & jcruz@fi.uba.ar   & \\
+         Germino, Santiago        & sgermino@fi.uba.ar   & \\
+         Menéndez, Martín        & mmenendez@fi.uba.ar   & 
+        \end{tabular}
+     \end{table}
+
+
+
+\vspace*{1cm}
+	
+
+\textit{\large{Este trabajo fue realizado en la Ciudad Autónoma de Buenos Aires,}} \\
+\textit{\large{entre agosto de 2023 y diciembre de 2024.}}
+
+\end{titlepage}
+
+\newpage
+\input{0.1 - Resumen}
+\newpage
+\input{0.2 - Agradecimientos}
+
+\newpage
+\tableofcontents
+
+\newpage
+\listoffigures
+
+\newpage
+\listoftables
+
+% -------------------------------------------------------------------------------
+\newpage
+\setcounter{page}{1}
+\pagenumbering{arabic}
+
+
+
+\section{Introducción general}
+\input{1 - Introducción general/1.1 - Descripción conceptual}
+\input{1 - Introducción general/1.2 - Contexto y motivación}
+\input{1 - Introducción general/1.3 - Objetivos y alcance}
+
+\newpage
+\section{Introducción específica}
+\input{2 - Introducción específica/2.1.1 - Requerimientos}
+\input{2 - Introducción específica/2.1.2 - Sistemas criticos}
+\input{2 - Introducción específica/2.2.1 - Nucleo 144}
+\input{2 - Introducción específica/2.2.2 - ESP32}
+\input{2 - Introducción específica/2.2.3 - GPS GY-NEO6MV2}
+\input{2 - Introducción específica/2.2.4 - SD}
+\input{2 - Introducción específica/2.3.1 - MQTT}
+\input{2 - Introducción específica/2.3.2 - WIFI}
+\input{2 - Introducción específica/2.3.3 - GPS}
+\input{2 - Introducción específica/2.3.4 - RS-485}
+\input{2 - Introducción específica/2.4 - RTOS}
+
+
+\newpage
+\section{Diseño e implementación}
+\input{3 - Diseño e implementación/3.1 - Descripción general de la solución}
+
+\input{3 - Diseño e implementación/3.2.1 - Medición SIS}
+\input{3 - Diseño e implementación/3.2.2 - Aislamiento SIS}
+\input{3 - Diseño e implementación/3.2.3 - Control de señales críticas}
+\input{3 - Diseño e implementación/3.2.4 - Registrador de eventos y conetor de zona}
+\input{3 - Diseño e implementación/3.2.5 - Llaves de activación modo aislado limitado y total}
+\input{3 - Diseño e implementación/3.2.6 - Lectura de velocidad por RS485}
+\input{3 - Diseño e implementación/3.2.7 - Módulo GPS}
+\input{3 - Diseño e implementación/3.2.8 - ESP32 y USB}
+\input{3 - Diseño e implementación/3.2.9 - Tarjeta SD}
+\input{3 - Diseño e implementación/3.2.10 - Nucleo144}
+\input{3 - Diseño e implementación/3.2.11 - Panel frontal}
+\input{3 - Diseño e implementación/3.2.12 - Fabricación y ensamblado}
+\input{3 - Diseño e implementación/3.2.13 - Gabinete}
+
+\input{3 - Diseño e implementación/3.3.1 - Lógica general}
+\input{3 - Diseño e implementación/3.3.2 - Mecanismos de RTOS}
+\input{3 - Diseño e implementación/3.3.3 - Medición SIS}
+\input{3 - Diseño e implementación/3.3.4 - Comunicación GPS}
+\input{3 - Diseño e implementación/3.3.5 - Velocidades rs485}
+\input{3 - Diseño e implementación/3.3.6 - Comunicacion con centrl operativa}
+\input{3 - Diseño e implementación/3.3.7- Lógica de control modo limitado e intermitente}
+\input{3 - Diseño e implementación/3.3.8 - Comunicación con controlador LED}
+\input{3 - Diseño e implementación/3.3.9 - Registro de eventos}
+
+\newpage
+\section{Ensayos y resultados}
+\input{4 - Ensayos y resultados/4.1 - Banco de pruebas}
+\input{4 - Ensayos y resultados/4.2 - Pruebas de hardware}
+\input{4 - Ensayos y resultados/4.3 - Pruebas de firmware}
+\input{4 - Ensayos y resultados/4.4 - Pruebas integrales}
+
+
+
+
+
+\newpage
+\section{Conclusiones}
+\input{5 - Conclusiones/5.1 - Conclusiones generales}
+\input{5 - Conclusiones/5.2 - Próximos pasos}
+
+
+\newpage
+\input{6 - Bibliografia}
+
+\end{document}
