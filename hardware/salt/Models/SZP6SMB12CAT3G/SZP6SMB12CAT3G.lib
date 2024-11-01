@@ -1,0 +1,27 @@
+EESchema-LIBRARY Version 2.3
+#encoding utf-8
+#SamacSys ECAD Model SZP6SMB12CAT3G
+#/1334243/1272103/2.50/2/3/TVS Diode (Bi-directional)
+DEF SZP6SMB12CAT3G D 0 30 Y Y 1 F N
+F0 "D" 500 350 50 H V L BNN
+F1 "SZP6SMB12CAT3G" 500 250 50 H V L BNN
+F2 "DIOM5436X247N" 500 150 50 H I L BNN
+F3 "https://www.littelfuse.com/~/media/electronics/datasheets/tvs_diodes/littelfuse_tvs_diode_szp6smb_datasheet.pdf.pdf" 500 50 50 H I L BNN
+F4 "ESD Suppressors / TVS Diodes 12V 600W BI-DIR SZP6SMB AEC-Q101" 500 -50 50 H I L BNN "Description"
+F5 "2.47" 500 -150 50 H I L BNN "Height"
+F6 "863-SZP6SMB12CAT3G" 500 -250 50 H I L BNN "Mouser Part Number"
+F7 "https://www.mouser.co.uk/ProductDetail/Littelfuse/SZP6SMB12CAT3G?qs=sK5eIuwOod79VxlBvAdu3Q%3D%3D" 500 -350 50 H I L BNN "Mouser Price/Stock"
+F8 "LITTELFUSE" 500 -450 50 H I L BNN "Manufacturer_Name"
+F9 "SZP6SMB12CAT3G" 500 -550 50 H I L BNN "Manufacturer_Part_Number"
+DRAW
+X ~ 1 0 0 200 R 50 50 0 0 P
+X ~ 2 800 0 200 L 50 50 0 0 P
+P 4 0 1 6 400 0 200 -100 200 100 400 0 N
+P 4 0 1 6 400 0 600 -100 600 100 400 0 N
+P 2 0 1 6 400 -80 400 80 N
+P 2 0 1 6 360 100 400 80 N
+P 2 0 1 6 400 -80 440 -100 N
+ENDDRAW
+ENDDEF
+#
+#End Library

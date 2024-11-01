@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP MF-USMF020-2
+D Fuse, PTC, Resettable, SMD, 1210, 200mA Bourns 0.2A Surface Mount Resettable Fuse, 30 V
+K
+F https://www.bourns.com/docs/Product-Datasheets/mfusmf.pdf
+$ENDCMP
+#
+#End Doc Library

@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP ACPL-C870-000E
+D ACPL-C870-000E, Isolation Amplifier, 4.5  5.5 V, 8-pin SSO
+K
+F https://docs.broadcom.com/docs/AV02-3563EN
+$ENDCMP
+#
+#End Doc Library

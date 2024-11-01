@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP ULN2003D1013TR
+D ULN2003D1013TR, Darlington Transistor Array, NPN 0.5A 50V, Array 7 HFE:1000, 16-Pin, SO
+K
+F http://www.st.com/st-web-ui/static/active/en/resource/technical/document/datasheet/CD00001244.pdf
+$ENDCMP
+#
+#End Doc Library
