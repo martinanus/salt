@@ -5,5 +5,5 @@ Para la configuración y utilización del controlador LED AS1115-BSST se utiliza
 El controlador trae opciones de decodificación para dígitos 7 segmentos en formato Code-B o HEX, pero no existe la posibilidad de configurarlo solo para los primeros 4 dígitos y utilizar los otros segmentos de manera individual. Por esto, es que se desactivó la decodificación en todos los dígitos y se dejó del lado del MCU la transformación de los números a los segmentos de cada dígito correspondientes.  \\ 
 
 
-El SAL/T, en cada ciclo de operación, releva los valores correspondientes para el display de velocidad y para cada uno de los LEDs indicativos del panel frontal. Luego, transforma estos estados en los bits que corresponden en cada uno de los 8 registros utilizados del controlador LED y lo envía por I2C para reflejar esos estados en las señales de activación de los LEDs en el panel frontal. 
+El SAL/T, en cada ciclo de operación, releva los valores correspondientes para el display de velocidad y para cada uno de los LEDs indicativos del panel frontal. Luego, transforma estos estados en los bits que corresponden en cada uno de los 8 registros utilizados del controlador LED y los envía por I2C para reflejar esos estados en las señales de activación de los LEDs en el panel frontal. 
 

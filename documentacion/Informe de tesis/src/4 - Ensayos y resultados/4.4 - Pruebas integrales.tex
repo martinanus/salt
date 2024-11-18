@@ -1,189 +1,189 @@
 \subsection{Pruebas integrales}
 
-Para realizar las pruebas integrales del sistema, se montaron todas las placas, conexiones internas, tarjetas de almacenamiento y se utilizó el banco de pruebas completo de la figura \ref{fig:testbench}. Se cargó en el MCU principal el firmware completo del sistema utilizando todos los mecanismos de RTOS, sincronización, lectura de entradas, activación de salidas y comunicación descriptas previamente. Dentro del módulo ESP32 también se cargó la versión final del firmware que permite la conexión a 2 redes Wi-Fi de manera alternada ante una caída de la red actual, conectarse al servidor MQTT suscribiendo y publicando en sus canales e interactuando con el MCU principal por su interfaz serie; también envía un comando de actualización de la fecha y hora de manera periódica después de consultarlo con un servidor NTP. \\
+Para realizar las pruebas integrales del sistema, se montaron todas las placas, conexiones internas, memorias y se utilizó el banco de pruebas completo de la figura \ref{fig:testbench}. Se cargó en el MCU principal el firmware completo del sistema utilizando todos los mecanismos de RTOS, sincronización, lectura de entradas, activación de salidas y comunicación descriptas previamente. Dentro del módulo ESP32 también se cargó la versión final del firmware que permite la conexión a dos redes Wi-Fi de manera alternada ante una caída de la red actual, conectarse al servidor MQTT suscribiendo y publicando en sus canales e interactuando con el MCU principal por su interfaz serie; también envía un comando de actualización de la fecha y hora de manera periódica después de consultarlo con un servidor NTP. \\
 
-Para estructurar las pruebas integrales del sistema se siguieron punto a punto los requerimientos establecidos para armar un plan de pruebas que permita validarlo de manera completa. Si bien hay requerimientos que pueden estar cubiertos en más de una prueba, se aseguró que todos los requerimientos están cubiertos en al menos una prueba y por lo tanto el éxito de todas las pruebas asegura el cumplimiento de todos los requerimientos. \\ 
+Para estructurar las pruebas integrales del sistema se siguieron punto a punto los requerimientos establecidos para armar un plan de pruebas que permita validarlo de manera completa. Si bien hay requerimientos que pueden estar cubiertos en más de una prueba, se aseguró que todos los requerimientos están cubiertos en al menos una prueba y, por lo tanto, el éxito de todas las pruebas asegura el cumplimiento de todos los requerimientos. \\ 
 
 \paragraph{Prueba 1: Lectura de estado de los SIS}
 \begin{enumerate}
-\item	Se enciende el SAL/T en estado normal
-\item	Se verifica que se haya activado el relé de registro correspondiente a la correcta alimentación del SAL/T 
-\item	Se abre una llave de una señal CT o FE de un SIS
-\item	Se verifica que se encienda el LED rojo de falla del SIS correspondiente
-\item	Se cierra la llave abierta
-\item	Se verifica que se restaure el LED verde de estado normal del SIS correspondiente
-\item	Se repite la prueba hasta agotar las llaves
-\item	Se desconecta la alimentación del SAL/T
-\item	Se verifica que se haya desactivado el relé de registro de alimentación del SAL/T 
+\item	Se enciende el SAL/T en estado normal.
+\item	Se verifica que se haya activado el relé de registro correspondiente a la correcta alimentación del SAL/T.
+\item	Se abre una llave de una señal CT o FE de un SIS.
+\item	Se verifica que se encienda el LED rojo de falla del SIS correspondiente.
+\item	Se cierra la llave abierta.
+\item	Se verifica que se restaure el LED verde de estado normal del SIS correspondiente.
+\item	Se repite la prueba hasta agotar las llaves.
+\item	Se desconecta la alimentación del SAL/T.
+\item	Se verifica que se haya desactivado el relé de registro de alimentación del SAL/T.
 \end{enumerate}
 
 \paragraph{Prueba 2: Aislamiento SIS en modo aislado limitado}
 \begin{enumerate}
-\item	Se enciende el SAL/T en estado normal
-\item	Se transmite una velocidad continua de 10km/h por debajo de cualquier umbral configurado
-\item	Se abre una llave de una señal X (CT o FE) de un SIS N (1 al 5)
-\item	Se verifica que se encienda el LED de falla del SIS correspondiente
-\item	Se verifica que el LED que representa la electroválvula de la señal X se haya apagado por la apertura de la llave
-\item	Se activa la llave local de modo aislado limitado
-\item	Se verifica que se haya encendido el LED del modo aislado limitado en el panel frontal
-\item	Se verifica que se haya activado el relé de registro correspondiente al evento modo aislado limitado 
-\item	Se verifica que se haya activado el relé de aislamiento del SIS N para la señal X
-\item	Se verifica que el LED que representa la electroválvula de la señal X se haya encendido por la continuidad de la línea
-\item	Se desactiva la llave de modo aislado limitado retornando al estado normal
-\item	Se verifica que se haya desactivado el relé de registro correspondiente al evento modo aislado limitado 
-\item	Se verifica que el aislamiento del SIS no exista más
-\item	Se cierra la llave del SIS abierta
-\item	Se repite la prueba hasta cubrir todas las llaves de los SIS
+\item	Se enciende el SAL/T en estado normal.
+\item	Se transmite una velocidad continua de 10 km/h por debajo de cualquier umbral configurado.
+\item	Se abre una llave de una señal X (CT o FE) de un SIS N (1 al 5).
+\item	Se verifica que se encienda el LED de falla del SIS correspondiente.
+\item	Se verifica que el LED que representa la electroválvula de la señal X se haya apagado por la apertura de la llave.
+\item	Se activa la llave local de modo aislado limitado.
+\item	Se verifica que se haya encendido el LED del modo aislado limitado en el panel frontal.
+\item	Se verifica que se haya activado el relé de registro correspondiente al evento modo aislado limitado.
+\item	Se verifica que se haya activado el relé de aislamiento del SIS N para la señal X.
+\item	Se verifica que el LED que representa la electroválvula de la señal X se haya encendido por la continuidad de la línea.
+\item	Se desactiva la llave de modo aislado limitado retornando al estado normal.
+\item	Se verifica que se haya desactivado el relé de registro correspondiente al evento modo aislado limitado.
+\item	Se verifica que el aislamiento del SIS no exista más.
+\item	Se cierra la llave del SIS abierta.
+\item	Se repite la prueba hasta cubrir todas las llaves de los SIS.
 
 \end{enumerate}
 
 \paragraph{Prueba 3: Activación modo total}
 \begin{enumerate}
-\item	Se enciende el SAL/T en estado normal
-\item	Se transmite una velocidad continua de 10km/h por debajo de cualquier umbral configurado
-\item	Se abre una llave de una señal X (CT o FE) de un SIS N (1 al 5)
-\item	Se verifica que se encienda el LED de falla del SIS correspondiente
-\item	Se verifica que el LED que representa la electroválvula de la señal X se haya apagado por la apertura de la llave
-\item	Se activa la llave local de modo aislado total
-\item	Se verifica que los circuitos de CT y FE haya activado el bypass de las señales conectando las señales ACT con OUT de cada una
-\item	Se verifica que el LED que representa la electroválvula de la señal de CT y de FE se haya encendido por la continuidad forzada de las líneas
-\item	Se transmite una velocidad continua de 50km/h por encima de los umbrales configurados por otros modos
-\item	Se verifica que el SAL/T no contempla la velocidad y mantiene alimentadas las señales de CT y FE
-\item	Se desactiva la llave de modo aislado total
-\item	Se verifica la liberación de las señales de CT y FE
-\item	Se verifica que la línea de la señal X está interrumpida porque todavía existe una falla en el SIS N
+\item	Se enciende el SAL/T en estado normal.
+\item	Se transmite una velocidad continua de 10 km/h por debajo de cualquier umbral configurado.
+\item	Se abre una llave de una señal X (CT o FE) de un SIS N (1 al 5).
+\item	Se verifica que se encienda el LED de falla del SIS correspondiente.
+\item	Se verifica que el LED que representa la electroválvula de la señal X se haya apagado por la apertura de la llave.
+\item	Se activa la llave local de modo aislado total.
+\item	Se verifica que los circuitos de CT y FE haya activado el bypass de las señales conectando las señales ACT con OUT de cada una.
+\item	Se verifica que el LED que representa la electroválvula de la señal de CT y de FE se haya encendido por la continuidad forzada de las líneas.
+\item	Se transmite una velocidad continua de 50 km/h por encima de los umbrales configurados por otros modos.
+\item	Se verifica que el SAL/T no contempla la velocidad y mantiene alimentadas las señales de CT y FE.
+\item	Se desactiva la llave de modo aislado total.
+\item	Se verifica la liberación de las señales de CT y FE.
+\item	Se verifica que la línea de la señal X está interrumpida porque todavía existe una falla en el SIS N.
 
 \end{enumerate}
 
 \paragraph{Prueba 4: Priorización de fuentes de medición de velocidad}
 \begin{enumerate}
-\item	Se enciende el SAL/T en estado normal
-\item	Se transmite una velocidad continua de 10km/h por debajo de cualquier umbral configurado en ambas interfaces RS485
-\item	Se verifica que el display del panel frontal indique la misma velocidad
-\item	Se transmite una velocidad de 20km/h reportada por la interfaz RS485\_2 (menor prioridad)
-\item	Se verifica que el display del panel frontal mantiene la visualización de la velocidad máxima prioridad 10km/h
-\item	Se varía la velocidad reportada por la interfaz RS485\_1 (mayor prioridad) a 25km/h
-\item	Se verifica que el display del panel frontal indique la velocidad de mayor prioridad 25km/h
-\item	Se desconecta la fuente comunicación de RS485\_1 de mayor prioridad
-\item	Se verifica que el display del panel frontal indique la velocidad de mayor prioridad disponible 20km/h
-\item	Se desconecta la fuente comunicación de RS485\_2 
-\item	Se verifica que el display del panel frontal indique la velocidad obtenida por el módulo GPS (cercano a 0km/h estando quieto)
-\item	Se desconecta la antena de la comunicación GPS
-\item	Se verifica que el display marque la ausencia de fuente de medición de velocidad con guiones en el display
+\item	Se enciende el SAL/T en estado normal.
+\item	Se transmite una velocidad continua de 10 km/h por debajo de cualquier umbral configurado en ambas interfaces RS-485.
+\item	Se verifica que el display del panel frontal indique la misma velocidad.
+\item	Se transmite una velocidad de 20 km/h reportada por la interfaz RS-485\_2 (menor prioridad).
+\item	Se verifica que el display del panel frontal mantiene la visualización de la velocidad máxima prioridad 10 km/h.
+\item	Se varía la velocidad reportada por la interfaz RS-485\_1 (mayor prioridad) a 25 km/h.
+\item	Se verifica que el display del panel frontal indique la velocidad de mayor prioridad 25 km/h.
+\item	Se desconecta la fuente comunicación de RS-485\_1 de mayor prioridad.
+\item	Se verifica que el display del panel frontal indique la velocidad de mayor prioridad disponible 20 km/h.
+\item	Se desconecta la fuente comunicación de RS-485\_2 .
+\item	Se verifica que el display del panel frontal indique la velocidad obtenida por el módulo GPS (cercano a 0 km/h estando quieto).
+\item	Se desconecta la antena de la comunicación GPS.
+\item	Se verifica que el display marque la ausencia de fuente de medición de velocidad con guiones en el display.
 
 \end{enumerate}
 
 \paragraph{Prueba 5: Control de señales críticas ante variación de velocidad}
 \begin{enumerate}
-\item	Se enciende el SAL/T en estado normal
-\item	Se reconoce la ubicación de la prueba dentro de la zona 1 de circulación según la configuración de los parámetros del GPS
-\item	Se transmite una velocidad continua de 10km/h por debajo de cualquier umbral configurado en ambas interfaces RS485
-\item	Se abre una llave de una señal X (CT o FE) de un SIS N (1 al 5)
-\item	Se activa la llave local de modo aislado limitado
-\item	Se verifica que el LED que representa la electroválvula de la señal X se haya encendido por la continuidad de la línea producida por el aislamiento del SIS en fallo
-\item	Se verifica que el buzzer sonoro emita sonido de manera intermitente
-\item	Se varía la velocidad reportada por la interfaz RS485\_1 (mayor prioridad) de manera progresiva hasta alcanzar los 32km/h
-\item	Se verifica que el display muestra de manera continua la evolución de la velocidad
-\item	Se verifica que al cruzar los 30km/h (umbral definido para la zona actual como velocidad límite para desaceleración) se interrumpe la señal de CT
-\item	Se verifica que el LED que representa la electroválvula de la señal CT se haya apagado por la interrupción de la línea
-\item	Se verifica que el LED indicativo de corte en la señal de CT se haya encendido
-\item	Se verifica que se haya activado el relé de registro correspondiente a la interrupción de la señal de CT
-\item 	Se verifica que el buzzer sonoro emita sonido de manera continua
-\item	Se disminuye progresivamente la velocidad hasta llegar a los 20 km/h
-\item	Se verifica que al cruzar los 24km/h (umbral definido para la zona actual como velocidad límite para retomar la aceleración) se libera la señal de CT
-\item	Se verifica que el LED que representa la electroválvula de la señal CT se haya encendido por la restauración de la continuidad de la línea
-\item	Se verifica que el LED indicativo de corte en la señal de CT se haya apagado
-\item	Se verifica que se haya desactivado el relé de registro correspondiente a la interrupción de la señal de CT
-\item	Se verifica que el buzzer sonoro emita sonido de manera intermitente
-\item	Se varía la velocidad reportada por la interfaz RS485\_1 (mayor prioridad) de manera progresiva hasta alcanzar los 40km/h
-\item	Se verifica que al cruzar los 30km/h se interrumpe la señal de CT
-\item	Se verifica que al cruzar los 36km/h (umbral definido para la zona actual como velocidad límite para frenar) se interrumpe la señal de FE
-\item	Se verifica que el LED que representa la electroválvula de la señal FE se haya apagado por la interrupción de la línea
-\item	Se verifica que el LED indicativo de corte en la señal de FE se haya encendido
-\item	Se verifica que se haya activado el relé de registro correspondiente a la interrupción de la señal de FE
-\item	Se disminuye progresivamente la velocidad hasta llegar a los 0 km/h
-\item	Se verifica que el estado de las señales de CT y FE permanezcan en estado de freno hasta alcanzar los 0km/h y haber pasado al menos 30 segundos (tiempo mínimo configurado para activar el freno)
-\item	Se verifica que transcurridos los 30 segundos y con una velocidad nula, se liberan las señales de CT y FE
-\item	Se verifica que se apaguen los LEDs indicativos de las señales de CT y FE
-\item	Se verifica que se desactiven los relés de registro de CT y FE
+\item	Se enciende el SAL/T en estado normal.
+\item	Se reconoce la ubicación de la prueba dentro de la zona 1 de circulación según la configuración de los parámetros del GPS.
+\item	Se transmite una velocidad continua de 10 km/h por debajo de cualquier umbral configurado en ambas interfaces RS-485.
+\item	Se abre una llave de una señal X (CT o FE) de un SIS N (1 al 5).
+\item	Se activa la llave local de modo aislado limitado.
+\item	Se verifica que el LED que representa la electroválvula de la señal X se haya encendido por la continuidad de la línea producida por el aislamiento del SIS en fallo.
+\item	Se verifica que el buzzer sonoro emita sonido de manera intermitente.
+\item	Se varía la velocidad reportada por la interfaz RS-485\_1 (mayor prioridad) de manera progresiva hasta alcanzar los 32 km/h.
+\item	Se verifica que el display muestra de manera continua la evolución de la velocidad.
+\item	Se verifica que al cruzar los 30 km/h (umbral definido para la zona actual como velocidad límite para desaceleración) se interrumpe la señal de CT.
+\item	Se verifica que el LED que representa la electroválvula de la señal CT se haya apagado por la interrupción de la línea.
+\item	Se verifica que el LED indicativo de corte en la señal de CT se haya encendido.
+\item	Se verifica que se haya activado el relé de registro correspondiente a la interrupción de la señal de CT.
+\item 	Se verifica que el buzzer sonoro emita sonido de manera continua.
+\item	Se disminuye progresivamente la velocidad hasta llegar a los 20 km/h.
+\item	Se verifica que al cruzar los 24 km/h (umbral definido para la zona actual como velocidad límite para retomar la aceleración) se libera la señal de CT.
+\item	Se verifica que el LED que representa la electroválvula de la señal CT se haya encendido por la restauración de la continuidad de la línea.
+\item	Se verifica que el LED indicativo de corte en la señal de CT se haya apagado.
+\item	Se verifica que se haya desactivado el relé de registro correspondiente a la interrupción de la señal de CT.
+\item	Se verifica que el buzzer sonoro emita sonido de manera intermitente.
+\item	Se varía la velocidad reportada por la interfaz RS-485\_1 (mayor prioridad) de manera progresiva hasta alcanzar los 40 km/h.
+\item	Se verifica que al cruzar los 30 km/h se interrumpe la señal de CT.
+\item	Se verifica que al cruzar los 36 km/h (umbral definido para la zona actual como velocidad límite para frenar) se interrumpe la señal de FE.
+\item	Se verifica que el LED que representa la electroválvula de la señal FE se haya apagado por la interrupción de la línea.
+\item	Se verifica que el LED indicativo de corte en la señal de FE se haya encendido.
+\item	Se verifica que se haya activado el relé de registro correspondiente a la interrupción de la señal de FE.
+\item	Se disminuye progresivamente la velocidad hasta llegar a los 0 km/h.
+\item	Se verifica que el estado de las señales de CT y FE permanezcan en estado de freno hasta alcanzar los 0 km/h y haber pasado al menos 30 segundos (tiempo mínimo configurado para activar el freno).
+\item	Se verifica que transcurridos los 30 segundos y con una velocidad nula, se liberan las señales de CT y FE.
+\item	Se verifica que se apaguen los LEDs indicativos de las señales de CT y FE.
+\item	Se verifica que se desactiven los relés de registro de CT y FE.
 
 \end{enumerate}
 
 \paragraph{Prueba 6: Modo intermitente}
 \begin{enumerate}
-\item	Se enciende el SAL/T en estado normal
-\item	Se desconectan o dejan de trasmitir todas las mediciones de velocidad
-\item	Se abre una llave de una señal X (CT o FE) de un SIS N (1 al 5)
-\item	Se activa la llave local de modo aislado limitado
-\item	Se verifica que se haya aplicado el aislamiento de la llave del SIS N en la línea X
-\item	Se verifica que se hayan activado las señales de CT y FE  durante 30 segundos por la falta de referencia de velocidad
-\item	Se verifica que se ejecute la rutina de modo intermitente para el perfil 1 seleccionado (T=15, D=30, N=4, E=40) durante algunos ciclos
-\item	Se modifica el perfil del modo intermitente con el botón de cambio de perfil al perfil 3
-\item	Se verifica que el LED indicador del perfil seleccionado se desplace cada vez que el botón se presione hasta llegar al perfil 3
-\item	Se verifica que se ejecute la rutina de modo intermitente para el perfil 3 seleccionado (T=30, D=60, N=3, E=60) durante algunos ciclos
+\item	Se enciende el SAL/T en estado normal.
+\item	Se desconectan o dejan de transmitir todas las mediciones de velocidad.
+\item	Se abre una llave de una señal X (CT o FE) de un SIS N (1 al 5).
+\item	Se activa la llave local de modo aislado limitado.
+\item	Se verifica que se haya aplicado el aislamiento de la llave del SIS N en la línea X.
+\item	Se verifica que se hayan activado las señales de CT y FE  durante 30 segundos por la falta de referencia de velocidad.
+\item	Se verifica que se ejecute la rutina de modo intermitente para el perfil 1 seleccionado (T=15, D=30, N=4, E=40) durante algunos ciclos.
+\item	Se modifica el perfil del modo intermitente con el botón de cambio de perfil al perfil 3.
+\item	Se verifica que el LED indicador del perfil seleccionado se desplace cada vez que el botón se presione hasta llegar al perfil 3.
+\item	Se verifica que se ejecute la rutina de modo intermitente para el perfil 3 seleccionado (T=30, D=60, N=3, E=60) durante algunos ciclos.
 
 \end{enumerate}
 
 \paragraph{Prueba 7: Comandos remotos para cambio de modo}
 \begin{enumerate}
-\item	Para cada comando que se envía dese la central operativa, se antepone un ID generado y se verifica la recepción de una confirmación del mensaje (ACK) para el mismo ID
-\item	Se envía desde la central operativa un comando PARADA\_TOTAL de manera periódica cada 1 segundo durante 60 segundos
-\item	Se verifica que se haya encendido el LED de presencia de comando remoto en el panel frontal
-\item	Se verifica que se hayan interrumpido las señales de CT y FE
-\item	Se verifica que después de 10 segundos después de finalizada la última transmisión, el sistema vuelve al estado normal y apaga el LED de presencia comando remoto
-\item	Se abre la llave de un SIS N en la línea de FE
-\item	Se envía desde la central operativa un comando COCHE\_DERIVA de manera periódica cada 1 segundo 
-\item	Se verifica que se haya interrumpido las señales de CT y liberado la de FE
-\item	Se envía el comando CANCEL una única vez y se deja de transmitir el comando anterior
-\item	Se verifica que el sistema vuelve al estado normal
-\item	Se abre la llave de un SIS N en la línea de CT
-\item	Se envía desde la central operativa un comando AISLADO\_TOTAL de manera periódica cada 1 segundo durante 60 segundos
-\item	Se verifica que se hayan liberado las señales de CT y de FE
-\item	Se verifica que después de 10 segundos después de finalizada la última transmisión, el sistema vuelve al estado normal
-\item	Se envía el comando COMMAND\_VALIDITY\_CONFIG:20
-\item	Se envía el comando INTERMITENTE:1 de manera periódica durante 120 segundos
-\item	Se verifica que el sistema entró en modo intermitente con el perfil 1 seleccionado ejecutando la rutina configurada (T=15, D=30, N=4, E=40)
-\item	Se verifica que después de 20 segundos después de finalizada la última transmisión (valor configurado), el sistema vuelve al estado normal
-\item	Se envía el comando INTERMITENTE\_CONFIG:4,20,40,5,60)
-\item	Se envía el comando INTERMITENTE:4 de manera periódica durante 120 segundos
-\item	Se verifica que el sistema entró en modo intermitente con el perfil 4 seleccionado ejecutando la rutina con los parámetros configurados (T=20, D=40, N=5, E=60)
-\item	Se verifica que después de 20 segundos después de finalizada la última transmisión (valor configurado), el sistema vuelve al estado normal
+\item	Para cada comando que se envía dese la central operativa, se antepone un ID generado y se verifica la recepción de una confirmación del mensaje (ACK) para el mismo ID.
+\item	Se envía desde la central operativa un comando PARADA\_TOTAL de manera periódica cada 1 segundo durante 60 segundos.
+\item	Se verifica que se haya encendido el LED de presencia de comando remoto en el panel frontal.
+\item	Se verifica que se hayan interrumpido las señales de CT y FE.
+\item	Se verifica que después de 10 segundos después de finalizada la última transmisión, el sistema vuelve al estado normal y apaga el LED de presencia comando remoto.
+\item	Se abre la llave de un SIS N en la línea de FE.
+\item	Se envía desde la central operativa un comando COCHE\_DERIVA de manera periódica cada 1 segundo.
+\item	Se verifica que se haya interrumpido las señales de CT y liberado la de FE.
+\item	Se envía el comando CANCEL una única vez y se deja de transmitir el comando anterior.
+\item	Se verifica que el sistema vuelve al estado normal.
+\item	Se abre la llave de un SIS N en la línea de CT.
+\item	Se envía desde la central operativa un comando AISLADO\_TOTAL de manera periódica cada 1 segundo durante 60 segundos.
+\item	Se verifica que se hayan liberado las señales de CT y de FE.
+\item	Se verifica que después de 10 segundos después de finalizada la última transmisión, el sistema vuelve al estado normal.
+\item	Se envía el comando COMMAND\_VALIDITY\_CONFIG:20.
+\item	Se envía el comando INTERMITENTE:1 de manera periódica durante 120 segundos.
+\item	Se verifica que el sistema entró en modo intermitente con el perfil 1 seleccionado ejecutando la rutina configurada (T=15, D=30, N=4, E=40).
+\item	Se verifica que después de 20 segundos después de finalizada la última transmisión (valor configurado), el sistema vuelve al estado normal.
+\item	Se envía el comando INTERMITENTE\_CONFIG:4,20,40,5,60).
+\item	Se envía el comando INTERMITENTE:4 de manera periódica durante 120 segundos.
+\item	Se verifica que el sistema entró en modo intermitente con el perfil 4 seleccionado ejecutando la rutina con los parámetros configurados (T=20, D=40, N=5, E=60).
+\item	Se verifica que después de 20 segundos después de finalizada la última transmisión (valor configurado), el sistema vuelve al estado normal.
 
 \end{enumerate}
 
 \paragraph{Prueba 8 - Registro de eventos}
 \begin{enumerate}
-\item	Se enciende el SAL/T en estado normal
-\item	Para todos los mensajes de logueos, se verifica que la fecha y hora registrada sea correcta
-\item	Se verifica durante toda la prueba que el sistema reporte por el canal de STATUS de MQQT el estado actual del sistema
-\item	Se abren varias llaves de un SIS N para la línea X (CT o FE)
-\item	Se verifica la recepción del cambio de estado de cada llave en el canal de logs de MQTT desde la central operativa
-\item	Se activa el modo aislado limitado y se verifica el reporte de cambio de modo
-\item	Se verifica el reporte de la acción de aislamiento de los SIS intervenidos
-\item	Se pierde la fuente de medición RS485\_1 de velocidad y se verifica el reporte de cambio de fuente de velocidad a la siguiente disponible
-\item	Se pierden todas las fuentes de velocidad por lo que se activa el modo intermitente y se verifica el reporte de cambio de modo de operación
-\item	Se verifica que se reporte cada activación y desactivación de las señales CT y FE
-\item	Se restaura las fuentes de velocidad y se verifica el reporte del cambio de modo
-\item	Se varía la velocidad y se verifica el reporte de las velocidades transcurridas en modo aislado limitado
-\item	Se activa la llave de modo aislado total y se verifica el reporte del cambio de modo
-\item	Se verifica el reporte de desintervención de los SIS afectados ya el SAL/T controla las señales de CT Y FE directamente
-\item	Se desactivan las llaves MAL y MAT para restablecer el modo normal y se verifica el reporte de cambio de modo
-\item	Se desconecta la antena GPS y se verifica que se reporte la perdida de cobertura y referencia de zona
-\item	Se reconecta la antena GPS y se verifica el reporte de cobertura y referencia de zona 1
-\item	Se envía el comando DOWNLOAD\_LOGS desde la central operativa y se verifica la recepción de todos los eventos transmitidos previamente con la fecha y hora originales de los eventos
-\item	Se conecta una PC por USB al SAL/T por comunicación serie, se envía de manera local el comando DOWNLOAD\_LOGS y se verifica la recepción de todos los eventos transmitidos previamente con la fecha y hora originales de los eventos
+\item	Se enciende el SAL/T en estado normal.
+\item	Para todos los mensajes de logueos, se verifica que la fecha y hora registrada sea correcta.
+\item	Se verifica durante toda la prueba que el sistema reporte por el canal de STATUS de MQQT el estado actual del sistema.
+\item	Se abren varias llaves de un SIS N para la línea X (CT o FE).
+\item	Se verifica la recepción del cambio de estado de cada llave en el canal de logs de MQTT desde la central operativa.
+\item	Se activa el modo aislado limitado y se verifica el reporte de cambio de modo.
+\item	Se verifica el reporte de la acción de aislamiento de los SIS intervenidos.
+\item	Se pierde la fuente de medición RS-485\_1 de velocidad y se verifica el reporte de cambio de fuente de velocidad a la siguiente disponible.
+\item	Se pierden todas las fuentes de velocidad por lo que se activa el modo intermitente y se verifica el reporte de cambio de modo de operación.
+\item	Se verifica que se reporte cada activación y desactivación de las señales CT y FE.
+\item	Se restaura las fuentes de velocidad y se verifica el reporte del cambio de modo.
+\item	Se varía la velocidad y se verifica el reporte de las velocidades transcurridas en modo aislado limitado.
+\item	Se activa la llave de modo aislado total y se verifica el reporte del cambio de modo.
+\item	Se verifica el reporte de desintervención de los SIS afectados ya el SAL/T controla las señales de CT Y FE directamente.
+\item	Se desactivan las llaves MAL y MAT para restablecer el modo normal y se verifica el reporte de cambio de modo.
+\item	Se desconecta la antena GPS y se verifica que se reporte la perdida de cobertura y referencia de zona.
+\item	Se reconecta la antena GPS y se verifica el reporte de cobertura y referencia de zona 1.
+\item	Se envía el comando DOWNLOAD\_LOGS desde la central operativa y se verifica la recepción de todos los eventos transmitidos previamente con la fecha y hora originales de los eventos.
+\item	Se conecta una PC por USB al SAL/T por comunicación serie, se envía de manera local el comando DOWNLOAD\_LOGS y se verifica la recepción de todos los eventos transmitidos previamente con la fecha y hora originales de los eventos.
 
 \end{enumerate}
 
 \paragraph{Prueba 9: Conectividad Wi-Fi}
 \begin{enumerate}
-\item	Se enciende el SAL/T en estado normal
-\item	Se apaga la red Wi-Fi principal a la que se conecta el sistema
-\item	Se verifica la recepción de un registro de evento de cambio de red a la red secundaria
-\item	Se apaga la red Wi-Fi secundaria a la que se conecta el sistema
-\item	Se verifica que se haya perdido la comunicación con la central operativa
-\item	Se prende cualquiera de las redes Wi-Fi configuradas
-\item	Se verifica que la conexión con la central operativa se restablece en pocos segundos y reporta la red a la que se conectó
+\item	Se enciende el SAL/T en estado normal.
+\item	Se apaga la red Wi-Fi principal a la que se conecta el sistema.
+\item	Se verifica la recepción de un registro de evento de cambio de red a la red secundaria.
+\item	Se apaga la red Wi-Fi secundaria a la que se conecta el sistema.
+\item	Se verifica que se haya perdido la comunicación con la central operativa.
+\item	Se prende cualquiera de las redes Wi-Fi configuradas.
+\item	Se verifica que la conexión con la central operativa se restablece en pocos segundos y reporta la red a la que se conectó.
 
 \end{enumerate}
 

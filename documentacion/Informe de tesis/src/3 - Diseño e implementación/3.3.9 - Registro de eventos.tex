@@ -1,6 +1,6 @@
 \subsubsection{Registro de eventos}
 
-El SAL/T tiene la capacidad de registrar eventos tanto de manera local como de manera remota. Localmente, interactúa con la tarjeta SD conectada por interfaz SPI y ante cada evento registrable, se escribe dentro de un archivo de logueo donde se va acumulando el histórico de eventos. A nivel remoto, para cada evento, se utiliza la comunicación UART con el módulo ESP32 para que este luego retransmita el mensaje al broker MQTT en el \textit{topic} de logs, y la central operativa pueda recibir estos eventos en tiempo real y almacenarlos en una base de datos propia. \\
+El SAL/T tiene la capacidad de registrar eventos tanto de manera local como de manera remota. Localmente, interactúa con la memoria SD conectada por interfaz SPI y ante cada evento registrable, se escribe dentro de un archivo de logueo donde se va acumulando el histórico de eventos. A nivel remoto, para cada evento, se utiliza la comunicación UART con el módulo ESP32 para que este luego retransmita el mensaje al broker MQTT en el \textit{topic} de logs, y la central operativa pueda recibir estos eventos en tiempo real y almacenarlos en una base de datos propia. \\
 
 Todos los eventos registrados están acompañados de una marca de tiempo que lleva internamente el SAL/T. Cada 10 segundos, el ESP32 envía una actualización de la fecha y hora para que el SAL/T se pueda sincronizar en caso de reinicio o eventual desfasaje del reloj interno. \\ 
 
@@ -18,4 +18,4 @@ El SAL/T registra cualquier evento de cambio de estado que pueda detectar. Algun
     \item Aplicación de comando remoto
 \end{itemize}
 
-El SAL/T permite la descarga de todos los datos registrados en la tarjeta SD de manera local, conectándose por USB a una comunicación serie 8N1, \textit{baudrate} 115.000 y enviando el comando DOWNLOAD\_LOGS. Como respuesta, se envían secuencialmente todos los datos almacenados en la memoria. Esta opción también es posible de manera remota, enviando desde la central operativa el mismo comando y recibiendo la respuesta por el canal de logs del broker MQTT. 
+El SAL/T permite la descarga de todos los datos registrados en la memoria SD de manera local, conectándose por USB a una comunicación serie 8N1, \textit{baudrate} 115.200 y enviando el comando DOWNLOAD\_LOGS. Como respuesta, se envían secuencialmente todos los datos almacenados en la memoria. Esta opción también es posible de manera remota, enviando desde la central operativa el mismo comando y recibiendo la respuesta por el canal de logs del broker MQTT. 
