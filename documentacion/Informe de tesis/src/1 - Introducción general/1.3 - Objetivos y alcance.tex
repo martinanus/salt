@@ -1,6 +1,6 @@
 \subsection{Objetivos y alcance}
 
-Se busca diseñar una solución para aumentar la seguridad en las formaciones ferroviarias ante fallas en los Sistemas Instrumentados de Seguridad mediante un mejor control y monitoreo de velocidad de la formación en tiempo real. La solución debe ser compatible con los mecanismos de seguridad y sistemas instalados actualmente en las formaciones de Trenes Argentinos. Los principales objetivos que se persiguen son:
+En este trabajo se busca hacer un rediseño del prototipo del SAL/T implementando algunas mejoras sugeridas por Trenes Argentinos en el pliego de especificaciones técnicas ET.SO.No 046/18–E3 \cite{spec} del 2022, utilizando un microcontrolador y componentes más modernos y un firmware basado en un sistema operativo de tiempo real que resulte más mantenible que el firmware de la primera versión del SAL/T desarrollada por Ivan Di Vito. Se busca diseñar una solución para aumentar la seguridad en las formaciones ferroviarias ante fallas en los Sistemas Instrumentados de Seguridad mediante un mejor control y monitoreo de velocidad de la formación en tiempo real. La solución debe ser compatible con los mecanismos de seguridad y sistemas instalados actualmente en las formaciones de Trenes Argentinos. Los principales objetivos que se persiguen son:
 
 
 \begin{itemize}
@@ -14,6 +14,20 @@ Se busca diseñar una solución para aumentar la seguridad en las formaciones fe
 
 El proyecto consiste en diseñar, desarrollar e implementar un nuevo prototipo del SAL/T teniendo en cuenta que se deben agregar nuevas funcionalidades requeridas, que el hardware debe ser actualizado con componentes vigentes y disponibles actualmente en el mercado internacional y que el firmware desarrollado debe estar basado en un sistema operativo de tiempo real que resulte portable. \\
 
-Para establecer los requerimientos del proyecto, se contempló el prototipo preexistente del SAL/T y el pliego de especificaciones técnicas que generó Trenes Argentinos teniendo en consideración las limitaciones de tiempos y presupuesto que hace sentido para un proyecto de fin de carrera de grado. \\
+Para establecer los requerimientos del proyecto, se contempló el prototipo preexistente del SAL/T y el pliego de especificaciones técnicas que generó Trenes Argentinos \cite{spec} teniendo en consideración las limitaciones de tiempos y presupuesto que hace sentido para un proyecto de fin de carrera de grado. \\
+
+Los cambios más relevantes mencionados en el pliego de especificaciones técnicas \cite{spec} que dan lugar a rediseñar el prototipo antes de producirlo en masa son los siguientes:
+
+\begin{itemize}
+    \item Utilización de un microcontrolador de mayor capacidad y más vigente.
+    \item Generación de un firmware más mantenible basado en un sistema operativo de tiempo real.
+    \item Aislamiento del SIS en falla en Modo Aislado Limitado sin interrumpir el funcionamiento del resto de los SIS.
+    \item Selección de distintos perfiles intermitentes desde el panel frontal del SAL/T.
+    \item Conector de zona para poder determinas distintas zonas de tránsito para la formación y activar cambios en otros sistemas de la formación.
+    \item Registro interno de eventos para cambios de estado de SIS, activación de modos, excesos de velocidad y activación de señales de Corte de Tracción y Freno de Emergencia.
+\end{itemize}
+
 
 Una vez finalizado el diseño del sistema, el prototipo debe ser fabricado sobre una placa PCB y se deben montar todos los componentes para su correcto funcionamiento. Se deberán realizar pruebas de laboratorio en las condiciones de funcionamiento para verificar que se cumplan todos los requerimientos establecidos. 
+
+
