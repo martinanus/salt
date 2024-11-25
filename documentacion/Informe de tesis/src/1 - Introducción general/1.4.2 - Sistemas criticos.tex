@@ -10,11 +10,11 @@ Para comprender el contexto de diseño del proyecto, es necesario definir y pres
 
 Para los sistemas críticos, es importante considerar las siguientes características: 
 \begin{itemize}
-    \item \textbf{Fiabilidad}: La capacidad del sistema para operar correctamente durante un período especificado. Esto abarca la prevención de fallos y la capacidad para recuperar el funcionamiento normal en caso de que ocurran fallos. 
-    \item \textbf{Seguridad}: Asegura que el sistema operará sin causar daño a personas o propiedades, cumpliendo con todas las normas y regulaciones relevantes.
-    \item \textbf{Disponibilidad}: El sistema debe estar operativo y disponible para su uso cuando sea necesario, minimizando el tiempo de inactividad.
-    \item \textbf{Tolerancia a fallos}: Implementación de mecanismos para detectar y manejar fallos sin interrumpir la operación del sistema. Esto puede incluir redundancias y métodos de recuperación.
-    \item \textbf{Tiempo real}: Capacidad del sistema para responder a eventos o comandos en un tiempo definido, esencial para la operación en situaciones de emergencia.
+    \item \textbf{Fiabilidad}: la capacidad del sistema para operar correctamente durante un período especificado. Esto abarca la prevención de fallos y la capacidad para recuperar el funcionamiento normal en caso de que ocurran fallos. 
+    \item \textbf{Seguridad}: asegura que el sistema operará sin causar daño a personas o propiedades, cumpliendo con todas las normas y regulaciones relevantes.
+    \item \textbf{Disponibilidad}: el sistema debe estar operativo y disponible para su uso cuando sea necesario, minimizando el tiempo de inactividad.
+    \item \textbf{Tolerancia a fallos}: implementación de mecanismos para detectar y manejar fallos sin interrumpir la operación del sistema. Esto puede incluir redundancias y métodos de recuperación.
+    \item \textbf{Tiempo real}: capacidad del sistema para responder a eventos o comandos en un tiempo definido, esencial para la operación en situaciones de emergencia.
 \end{itemize}
 
 Los sistemas críticos deben estar diseñados para gestionar emergencias de manera efectiva, lo que incluye la detección rápida de situaciones de riesgo inesperadas y la notificación inmediata al personal responsable. Para lograr esto, se implementan sistemas de alerta y comunicación que permiten actuar con rapidez ante cualquier incidente. Además, se emplean diversas técnicas de diseño enfocadas en aumentar la seguridad, entre las cuales destaca la incorporación de sistemas redundantes que garantizan la continuidad de la operación, incluso si algún componente falla. En este contexto, cobra relevancia el concepto de \textit{fail-safe} o fallo seguro, que asegura que cualquier error o falla en el sistema resulte en un estado seguro, evitando que dicha falla provoque problemas adicionales en otros componentes o sistemas relacionados. \\
@@ -22,18 +22,18 @@ Los sistemas críticos deben estar diseñados para gestionar emergencias de mane
 
 Las fallas de un sistema de seguridad se pueden clasificar de la siguiente manera \cite{clasificacion_fallas}: 
 \begin{itemize}
-    \item \textbf{Fallas aleatorias}: Son aquellas que ocurren sin un patrón predecible y son inherentemente impredecibles en términos de momento y causa. Estos fallos suelen estar asociados con la naturaleza estadística de la vida útil de los componentes.
-    \item \textbf{Fallas sistemáticas}: Son causadas por defectos en el diseño, la fabricación o el proceso de integración del sistema. Estos fallos son predecibles si se conocen las debilidades en el diseño o el proceso.
-    \item \textbf{Fallas de causa común}: Son aquellas que afectan a varios componentes o sistemas debido a una única causa raíz. Estos fallos pueden ser resultado de una debilidad en el diseño, un defecto en el proceso de fabricación, o una condición operativa que impacta a múltiples partes del sistema. Muchas veces está vinculado a eventos ambientales como inundaciones, tormentas u otros. 
+    \item \textbf{Fallas aleatorias}: son aquellas que ocurren sin un patrón predecible y son inherentemente impredecibles en términos de momento y causa. Estos fallos suelen estar asociados con la naturaleza estadística de la vida útil de los componentes.
+    \item \textbf{Fallas sistemáticas}: son causadas por defectos en el diseño, la fabricación o el proceso de integración del sistema. Estos fallos son predecibles si se conocen las debilidades en el diseño o el proceso.
+    \item \textbf{Fallas de causa común}: son aquellas que afectan a varios componentes o sistemas debido a una única causa raíz. Estos fallos pueden ser resultado de una debilidad en el diseño, un defecto en el proceso de fabricación, o una condición operativa que impacta a múltiples partes del sistema. Muchas veces están vinculados a eventos ambientales como inundaciones, tormentas u otros. 
 \end{itemize}
 
 Los sistemas de seguridad pueden cambiar a distintos estados dependiendo de cómo sea el manejo de una falla. Estos estados muestran un compromiso entre la seguridad del sistema y su disponibilidad \cite{norma_61508}. 
 
 \begin{itemize}
-    \item \textbf{Estado normal}: En este estado no hay ninguna falla presente en el sistema. El sistema se encuentra disponible y operando con todas las medidas de seguridad habilitadas. Este es el estado deseado y el más seguro. 
-    \item \textbf{Estado seguro}: Existe una falla en el sistema que se manejó de forma segura tras la activación de alguno de los mecanismos de seguridad. El sistema entra en estado seguro para evitar daños adicionales. El sistema no se encuentra disponible y se debe reparar el sistema para retornar al estado normal. 
-    \item \textbf{Estado intermedio}: Existe una falla que está siendo controlada por alguna de las funciones de seguridad y permite que el sistema siga operativo. Las funciones de seguridad pueden ser realizadas ante nuevas fallas, pero el sistema funciona con limitaciones y mayor riesgo. En este estado, el sistema debe ser reparado para recuperar su grado de seguridad normal y evitar fallas adicionales. 
-    \item \textbf{Estado peligroso} Existe una falla y las funciones de seguridad no pueden ser activadas. El sistema está disponible, pero no protegido lo que implica un riesgo de operación mucho más alto al establecido. Este estado es el más crítico y se deben tomar medidas de emergencia inmediatas para restaurar la seguridad y minimizar el riesgo. \\ 
+    \item \textbf{Estado normal}: en este estado no hay ninguna falla presente en el sistema. El sistema se encuentra disponible y operando con todas las medidas de seguridad habilitadas. Este es el estado deseado y el más seguro. 
+    \item \textbf{Estado seguro}: existe una falla en el sistema que se manejó de forma segura tras la activación de alguno de los mecanismos de seguridad. El sistema entra en estado seguro para evitar daños adicionales. El sistema no se encuentra disponible y se debe reparar el sistema para retornar al estado normal. 
+    \item \textbf{Estado intermedio}: existe una falla que está siendo controlada por alguna de las funciones de seguridad y permite que el sistema siga operativo. Las funciones de seguridad pueden ser realizadas ante nuevas fallas, pero el sistema funciona con limitaciones y mayor riesgo. En este estado, el sistema debe ser reparado para recuperar su grado de seguridad normal y evitar fallas adicionales. 
+    \item \textbf{Estado peligroso} existe una falla y las funciones de seguridad no pueden ser activadas. El sistema está disponible, pero no protegido lo que implica un riesgo de operación mucho más alto al establecido. Este estado es el más crítico y se deben tomar medidas de emergencia inmediatas para restaurar la seguridad y minimizar el riesgo. \\ 
     
 \end{itemize}
 
